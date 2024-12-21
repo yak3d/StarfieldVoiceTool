@@ -62,10 +62,17 @@ public class VoiceTypeTreeViewModel
         return await Task.Run(() =>
         {
             var treeCache = _cacheManager.TryToLoadCache();
-            var tree = treeCache != null ? treeCache : _dialogueTreeBuilder.BuildTree(Progress).ToList();
-
-            _searchableMasters = tree;
-            return new ObservableCollection<Master>(tree);
+            try
+            {
+                var tree = treeCache != null ? treeCache : _dialogueTreeBuilder.BuildTree(Progress).ToList();
+                _searchableMasters = tree;
+                return new ObservableCollection<Master>(tree);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, e.Message);
+                throw;
+            }
         });
     }
 
