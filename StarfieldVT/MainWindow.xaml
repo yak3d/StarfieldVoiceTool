@@ -1,0 +1,64 @@
+﻿<Window x:Class="StarfieldVT.MainWindow"
+        x:Name="MainWindowElement"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:fa="http://schemas.fontawesome.com/icons/svg"
+        xmlns:starfieldVtCore="clr-namespace:StarfieldVT.Core;assembly=StarfieldVT.Core"
+        xmlns:starfieldVtCoreModels="clr-namespace:StarfieldVT.Core.Models;assembly=StarfieldVT.Core"
+        xmlns:local="clr-namespace:StarfieldVT"
+        xmlns:starfieldVtUi="clr-namespace:StarfieldVT.UI.View;assembly=StarfieldVT.UI"
+        xmlns:attachedProperties="http://schemas.fontawesome.com/icons/svg/properties"
+        mc:Ignorable="d"
+        Title="Starfield Voice Tool" Height="433" Width="1200">
+    <Window.DataContext>
+        <local:MainWindowModel />
+    </Window.DataContext>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+
+        </Grid.RowDefinitions>
+
+        <Menu Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="0">
+            <MenuItem Header="_File" Click="MenuItem_Click">
+                <MenuItem Header="Delete Cache" Click="DeleteCache_Click"></MenuItem>
+                <MenuItem Header="Exit"></MenuItem>
+            </MenuItem>
+        </Menu>
+        <!-- <ToolBarTray Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"> -->
+        <!--     <ToolBar AllowDrop="False"> -->
+        <!--         <Button Name="refreshBtn" attachedProperties:FontAwesome.Icon="Solid_ArrowsRotate" Height="25" Width="25" Click="refreshBtn_Click" IsEnabled="False"></Button> -->
+        <!--     </ToolBar> -->
+        <!-- </ToolBarTray> -->
+        <starfieldVtUi:VoiceTypeTree Grid.Row="2" Grid.Column="0" Name="VoiceTypeTree" VoiceTypeSelected="VoiceTypeTree_OnVoiceTypeSelected" MasterSelected="VoiceTypeTree_OnMasterSelected" SearchText="{Binding Path=DataContext.SearchBarText, ElementName=MainWindowElement}" ProgressChanged="VoiceTypeTree_OnProgressChanged"></starfieldVtUi:VoiceTypeTree>
+        <Grid Grid.Row="3" Grid.Column="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <fa:SvgAwesome Grid.Row="0" Grid.Column="0" Icon="Solid_MagnifyingGlass" Margin="10, 10" Height="30" Width="30" />
+            <TextBox Grid.Row="0" Grid.Column="1" Height="30" FontSize="18" Margin="5,10,10,10" VerticalContentAlignment="Center" Text="{Binding Path=SearchBarText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+            <Button Grid.Column="2" attachedProperties:FontAwesome.Icon="Solid_Stop" Height="30" Width="30" Click="StopButton_OnClick"></Button>
+        </Grid>
+        <starfieldVtUi:VoiceLineTable DataContext="{Binding VoiceLineTableViewModel}" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2"></starfieldVtUi:VoiceLineTable>
+        <StatusBar Grid.Row="4" Grid.ColumnSpan="3" Grid.Column="0">
+            <ProgressBar Name="TreeBuilderProgressBar" Height="15" Width="120" Visibility="Collapsed"></ProgressBar>
+            <Label Name="ProgressText"></Label>
+        </StatusBar>
+    </Grid>
+</Window>

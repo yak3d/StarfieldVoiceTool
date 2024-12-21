@@ -1,0 +1,77 @@
+﻿<UserControl x:Class="StarfieldVT.UI.View.VoiceLineTable"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:StarfieldVT.UI.View"
+             xmlns:viewModel="clr-namespace:StarfieldVT.UI.ViewModel"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="300"
+             x:Name="parent"
+             d:DataContext="{d:DesignInstance viewModel:VoiceLineTableViewModel}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        <DataGrid Grid.Row="0" Grid.Column="0" IsReadOnly="True" AutoGenerateColumns="False" Name="DialogueGrid" ItemsSource="{Binding VoiceLines, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedVoiceLine}"
+                  MouseDoubleClick="DialogueGrid_OnMouseDoubleClick" SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.Header>Voice Type</DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding VoiceType}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.Header>Filename</DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Filename}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.Header>Dialogue</DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Dialogue}" TextWrapping="Wrap"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+            <!-- <DataGrid.RowDetailsTemplate> -->
+            <!--     <DataTemplate> -->
+            <!--         <Grid> -->
+            <!--             <Grid.ColumnDefinitions> -->
+            <!--                 <ColumnDefinition></ColumnDefinition> -->
+            <!--                 <ColumnDefinition></ColumnDefinition> -->
+            <!--                 <ColumnDefinition></ColumnDefinition> -->
+            <!--             </Grid.ColumnDefinitions> -->
+            <!--             <Grid.RowDefinitions> -->
+            <!--                 <RowDefinition></RowDefinition> -->
+            <!--                 <RowDefinition></RowDefinition> -->
+            <!--                 <RowDefinition></RowDefinition> -->
+            <!--             </Grid.RowDefinitions> -->
+            <!-- -->
+            <!--         </Grid> -->
+            <!--     </DataTemplate> -->
+            <!-- </DataGrid.RowDetailsTemplate> -->
+        </DataGrid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" ></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+        <Label Margin="0, 5" Content="Filter"></Label>
+        <TextBox Grid.Column="1" Margin="0, 5" VerticalContentAlignment="Center" Text="{Binding VoiceLineFilterText, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+        <Button Grid.Column="2" Name="ExportBtn" Margin="10, 5" Content="Export" Click="ExportBtn_OnClick"></Button>
+        </Grid>
+    </Grid>
+</UserControl>

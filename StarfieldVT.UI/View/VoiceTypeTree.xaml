@@ -1,0 +1,32 @@
+﻿<UserControl x:Class="StarfieldVT.UI.View.VoiceTypeTree"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local = "clr-namespace:StarfieldVT.UI.ViewModel"
+             xmlns:models="clr-namespace:StarfieldVT.Core.Models;assembly=StarfieldVT.Core"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="300" d:DataContext="{d:DesignInstance local:VoiceTypeTreeViewModel}">
+    <Grid>
+        <TreeView Name="EsmTreeView" ItemsSource="{Binding Path=Masters.Result}" ScrollViewer.CanContentScroll="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  SelectedItemChanged="EsmTreeView_OnSelectedItemChanged"
+                  >
+            <TreeView.Resources>
+                <HierarchicalDataTemplate ItemsSource="{Binding VoiceTypes}" DataType="{x:Type models:Master}">
+                    <TextBlock Text="{Binding Filename}"/>
+                </HierarchicalDataTemplate>
+                <DataTemplate DataType="{x:Type models:VoiceType}">
+                    <TextBlock Text="{Binding EditorId}" />
+                </DataTemplate>
+            </TreeView.Resources>
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="{x:Type TreeViewItem}">
+                    <Setter Property="IsExpanded" Value="True" />
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
+
+    </Grid>
+</UserControl>
