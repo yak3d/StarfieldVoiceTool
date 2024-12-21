@@ -8,7 +8,7 @@ This tool is used to find voice lines by voice type in Starfield, filter them, p
 * [ffmpeg](https://www.ffmpeg.org/), optional but VFRT will download if its not found on `%PATH%`
 
 ## Installation
-1. Download a [Release Zip](https://github.com/yak3d/StarfieldVFRT/releases) or a [Nightly Zip](https://github.com/yak3d/StarfieldVFRT/actions)
+1. Download a [Release Zip](https://github.com/yak3d/StarfieldVoiceTool/releases) or a [Nightly Zip](https://github.com/yak3d/StarfieldVoiceTool/actions)
 2. Extract to a folder of your choice
 
 ## Running
