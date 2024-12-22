@@ -5,13 +5,15 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="FFMpegCore" Version="5.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
-    <PackageReference Include="Mutagen.Bethesda" Version="0.45.1" />
+    <PackageReference Include="Mutagen.Bethesda" Version="0.49.0-alpha.44" />
     <PackageReference Include="Serilog" Version="4.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />

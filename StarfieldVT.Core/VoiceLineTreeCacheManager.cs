@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Reflection;
 using System.Text.Json;
 
 using Serilog;
@@ -22,7 +23,10 @@ namespace StarfieldVT.Core
         public void SaveCurrentTree(List<Master> tree)
         {
             Log.Information("Writing cache file to {cachePath}", this._cachePath);
-            string treeAsJson = JsonSerializer.Serialize(tree);
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+            var cacheFile = new CacheFile { Masters = tree, Version = currentVersion ?? new Version() };
+            string treeAsJson = JsonSerializer.Serialize(cacheFile);
             File.WriteAllText(this._cachePath, treeAsJson);
         }
 
@@ -31,19 +35,41 @@ namespace StarfieldVT.Core
             return File.Exists(this._cachePath);
         }
 
+        private bool CacheIsUpToDate(CacheFile cacheFile)
+        {
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+            var isCacheOutOfDate = currentVersion > cacheFile.Version;
+
+            if (isCacheOutOfDate)
+            {
+                Log.Information("Cache file is from an older version, invalidating it and rebuilding the voice line tree.");
+            }
+
+            return isCacheOutOfDate;
+        }
+
         public List<Master>? TryToLoadCache()
         {
             if (cacheExists())
             {
                 Log.Information($"Loading cache from {_cachePath}");
-                var cache = File.ReadAllText(this._cachePath);
+                var cacheText = File.ReadAllText(this._cachePath);
 
-                if (cache == null)
+                try
                 {
-                    return null;
+                    var cache = JsonSerializer.Deserialize<CacheFile>(cacheText);
+                    if (cache == null || CacheIsUpToDate(cache))
+                    {
+                        return null;
+                    }
+
+                    return cache.Masters;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"Failed to load cache from {_cachePath} and will invalidate + reload instead: {ex.Message}");
                 }
 
-                return JsonSerializer.Deserialize<List<Master>>(cache);
             }
 
             return null;

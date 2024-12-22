@@ -2,6 +2,7 @@
 
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
+using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Starfield;
 using Mutagen.Bethesda.Strings;
 
@@ -31,6 +32,7 @@ namespace StarfieldVT.Core
                 esm.Mod?.Quests.ForEach(quest =>
                 {
                     Log.Debug($"Parsing quest {quest.EditorID} in {esm.FileName}");
+
                     progress.Report(new EsmLoadingProgress()
                     {
                         esmName = quest.EditorID,
@@ -40,24 +42,68 @@ namespace StarfieldVT.Core
                     quest.DialogTopics.ForEach(dt =>
                     {
                         Log.Debug($"Parsing dialogue {dt.Name} in {esm.FileName}");
+                        // lastly, lets fall back on the conditions in the quest if there's no speakers
+                        var allVoiceTypesInQuest = GetQuestConditionalVoiceTypes(quest, linkCache);
                         dt.Responses.ForEach(resp =>
                         {
                             Log.Debug($"Parsing response {dt.FormKey} with {resp.Responses.Count} responses in {esm.FileName}");
                             resp.Responses.Where(innerResp => innerResp.TROTs.Count <= 0).ForEach(innerResp =>
                             {
                                 innerResp.Text.TryLookup(Language.English, out var innerRespText);
-
-                                if (!string.IsNullOrEmpty(innerRespText) && !resp.Speaker.IsNull)
+                                // get the group editor id if there's no speaker
+                                string? speaker = null;
+                                if (resp.Speaker.IsNull)
                                 {
-                                    var voiceType = resp.Speaker?.TryResolve(linkCache)?.Voice.TryResolve(linkCache).EditorID;
+                                    speaker = resp.DialogGroup.TryResolve(linkCache)?.EditorID;
+                                }
+                                else
+                                {
+                                    speaker = resp.Speaker.TryResolve(linkCache)?.EditorID;
+                                }
 
-                                    if (voiceType != null)
+                                if (!string.IsNullOrEmpty(innerRespText) && speaker != null)
+                                {
+                                    if (resp.DialogGroup.IsNull)
                                     {
-                                        var wemPath = BuildWemPath(esm.FileName, voiceType, innerResp.WEMFile.ToString("x8"));
+                                        var voiceType = resp.Speaker?.TryResolve(linkCache)?.Voice.TryResolve(linkCache).EditorID;
 
-                                        List<VoiceLine> voiceLineList = [new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)];
-                                        tempDict.AddOrUpdate(voiceType, voiceLineList, (_, lines) => lines.Append(new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)).ToList());
+                                        if (voiceType != null)
+                                        {
+                                            var wemPath = BuildWemPath(esm.FileName, voiceType, innerResp.WEMFile.ToString("x8"));
+
+                                            List<VoiceLine> voiceLineList = [new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)];
+                                            tempDict.AddOrUpdate(voiceType, voiceLineList, (_, lines) => lines.Append(new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)).ToList());
+                                        }
                                     }
+                                    else
+                                    {
+                                        // get the group and its voice type conditions
+                                        var voiceTypes = resp.DialogGroup.TryResolve(linkCache)?.Conditions
+                                            .Where(condition => condition.Data is GetIsVoiceTypeConditionData)
+                                            .Select(condition => ((GetIsVoiceTypeConditionData)condition.Data).FirstParameter.Link.TryResolve(linkCache)?.EditorID).OfType<string>();
+
+                                        voiceTypes?.ForEach(vt =>
+                                        {
+                                            var wemPath = BuildWemPath(esm.FileName, vt, innerResp.WEMFile.ToString("x8"));
+                                            List<VoiceLine> voiceLines = [new VoiceLine(wemPath, innerRespText, esm.FileName, vt)];
+                                            tempDict.AddOrUpdate(vt, voiceLines, (_, lines) => lines.Append(new VoiceLine(wemPath, innerRespText, esm.FileName, vt)).ToList());
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    allVoiceTypesInQuest?.ForEach(voiceType =>
+                                    {
+                                        var wemPath = BuildWemPath(esm.FileName, voiceType,
+                                            innerResp.WEMFile.ToString("x8"));
+
+                                        List<VoiceLine> voiceLineList =
+                                            [new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)];
+                                        tempDict.AddOrUpdate(voiceType, voiceLineList,
+                                            (_, lines) =>
+                                                lines.Append(new VoiceLine(wemPath, innerRespText, esm.FileName,
+                                                    voiceType)).ToList());
+                                    });
                                 }
                             });
 
@@ -75,6 +121,7 @@ namespace StarfieldVT.Core
                                     tempDict.AddOrUpdate(editorId, voiceLineList, (_, lines) => lines.Append(new VoiceLine(wemPath, dialogueText, esm.FileName, editorId)).ToList());
                                 }
                             });
+
                         });
                     });
 
@@ -91,7 +138,7 @@ namespace StarfieldVT.Core
                         VoiceLines = lines
                     };
 
-                }).ToList();
+                }).OrderBy(voiceType => voiceType.EditorId).ToList();
 
                 if (voiceTypes.Count > 0)
                 {
@@ -104,6 +151,28 @@ namespace StarfieldVT.Core
             SaveCache(tree);
 
             return tree;
+        }
+
+        private IEnumerable<string>? GetQuestConditionalVoiceTypes(IQuestGetter quest, ILinkCache<IStarfieldMod, IStarfieldModGetter> linkCache)
+        {
+            if (quest.DialogConditions.Any())
+            {
+                var questConditions = quest.DialogConditions.Select(condition => condition.Data)
+                    .OfType<GetIsVoiceTypeConditionData>();
+
+                var getIsVoiceTypeConditionDatas = questConditions.ToList();
+                if (getIsVoiceTypeConditionDatas.Any())
+                {
+                    var voiceTypeConditionFormKey = getIsVoiceTypeConditionDatas.Select(condition => condition.FirstParameter)
+                    .First().Link.FormKey;
+                    var voiceTypeConditionFormListKey = voiceTypeConditionFormKey.ToLink<IFormListGetter>();
+
+                    return voiceTypeConditionFormListKey.TryResolve(linkCache)?.Items
+                        .Select(vt => vt.TryResolve<IVoiceTypeGetter>(linkCache)?.EditorID).OfType<string>();
+                }
+            }
+
+            return null;
         }
 
         private string BuildWemPath(string fileName, string voiceType, string wemFile)
