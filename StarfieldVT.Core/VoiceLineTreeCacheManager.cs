@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Text.Json;
 
 using Serilog;
@@ -45,7 +44,7 @@ namespace StarfieldVT.Core
             {
                 Log.Information("Cache file is from an older version, invalidating it and rebuilding the voice line tree.");
             }
-            
+
             return isCacheOutOfDate;
         }
 
