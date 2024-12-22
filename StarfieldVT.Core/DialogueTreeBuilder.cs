@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
-
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins.Cache;
+using Mutagen.Bethesda.Plugins.Order;
 using Mutagen.Bethesda.Starfield;
 using Mutagen.Bethesda.Strings;
 
@@ -19,141 +19,83 @@ namespace StarfieldVT.Core
     public class DialogueTreeBuilder
     {
         private readonly VoiceLineTreeCacheManager _voiceLineTreeCacheManager = new VoiceLineTreeCacheManager();
+        private readonly VoiceArchiveManager _voiceArchiveManager = new VoiceArchiveManager();
+        private int lineCount = 0;
+
         public List<Models.Master> BuildTree(IProgress<EsmLoadingProgress> progress)
         {
+            var startTime = DateTime.Now;
             using var env = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
             var linkCache = env.LinkCache;
-            var tree = env.LoadOrder.ListedOrder.Where(esm => esm is { Enabled: true, ExistsOnDisk: true }).Select(esm =>
-            {
-                Log.Information($"Loading plugin {esm.FileName}");
-                var tempDict = new ConcurrentDictionary<string, List<VoiceLine>>();
-                var questCount = 1;
-
-                esm.Mod?.Quests.ForEach(quest =>
+            var tree = env.LoadOrder.ListedOrder.Where(esm => esm is { Enabled: true, ExistsOnDisk: true }).Select(
+                esm =>
                 {
-                    Log.Debug($"Parsing quest {quest.EditorID} in {esm.FileName}");
+                    Log.Information($"Loading plugin {esm.FileName}");
+                    var tempDict = new ConcurrentDictionary<string, List<VoiceLine>>();
+                    var questCount = 1;
+                    var wemMap = _voiceArchiveManager.BuildWemMap(esm.FileName);
 
-                    progress.Report(new EsmLoadingProgress()
+                    esm.Mod?.Quests.ForEach(quest =>
                     {
-                        esmName = quest.EditorID,
-                        num = questCount
-                    });
+                        Log.Debug($"Parsing quest {quest.EditorID} in {esm.FileName}");
 
-                    quest.DialogTopics.ForEach(dt =>
-                    {
-                        Log.Debug($"Parsing dialogue {dt.Name} in {esm.FileName}");
-                        // lastly, lets fall back on the conditions in the quest if there's no speakers
-                        var allVoiceTypesInQuest = GetQuestConditionalVoiceTypes(quest, linkCache);
-                        dt.Responses.ForEach(resp =>
+                        progress.Report(new EsmLoadingProgress()
                         {
-                            Log.Debug($"Parsing response {dt.FormKey} with {resp.Responses.Count} responses in {esm.FileName}");
-                            resp.Responses.Where(innerResp => innerResp.TROTs.Count <= 0).ForEach(innerResp =>
-                            {
-                                innerResp.Text.TryLookup(Language.English, out var innerRespText);
-                                // get the group editor id if there's no speaker
-                                string? speaker = null;
-                                if (resp.Speaker.IsNull)
-                                {
-                                    speaker = resp.DialogGroup.TryResolve(linkCache)?.EditorID;
-                                }
-                                else
-                                {
-                                    speaker = resp.Speaker.TryResolve(linkCache)?.EditorID;
-                                }
-
-                                if (!string.IsNullOrEmpty(innerRespText) && speaker != null)
-                                {
-                                    if (resp.DialogGroup.IsNull)
-                                    {
-                                        var voiceType = resp.Speaker?.TryResolve(linkCache)?.Voice.TryResolve(linkCache).EditorID;
-
-                                        if (voiceType != null)
-                                        {
-                                            var wemPath = BuildWemPath(esm.FileName, voiceType, innerResp.WEMFile.ToString("x8"));
-
-                                            List<VoiceLine> voiceLineList = [new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)];
-                                            tempDict.AddOrUpdate(voiceType, voiceLineList, (_, lines) => lines.Append(new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)).ToList());
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // get the group and its voice type conditions
-                                        var voiceTypes = resp.DialogGroup.TryResolve(linkCache)?.Conditions
-                                            .Where(condition => condition.Data is GetIsVoiceTypeConditionData)
-                                            .Select(condition => ((GetIsVoiceTypeConditionData)condition.Data).FirstParameter.Link.TryResolve(linkCache)?.EditorID).OfType<string>();
-
-                                        voiceTypes?.ForEach(vt =>
-                                        {
-                                            var wemPath = BuildWemPath(esm.FileName, vt, innerResp.WEMFile.ToString("x8"));
-                                            List<VoiceLine> voiceLines = [new VoiceLine(wemPath, innerRespText, esm.FileName, vt)];
-                                            tempDict.AddOrUpdate(vt, voiceLines, (_, lines) => lines.Append(new VoiceLine(wemPath, innerRespText, esm.FileName, vt)).ToList());
-                                        });
-                                    }
-                                }
-                                else
-                                {
-                                    allVoiceTypesInQuest?.ForEach(voiceType =>
-                                    {
-                                        var wemPath = BuildWemPath(esm.FileName, voiceType,
-                                            innerResp.WEMFile.ToString("x8"));
-
-                                        List<VoiceLine> voiceLineList =
-                                            [new VoiceLine(wemPath, innerRespText, esm.FileName, voiceType)];
-                                        tempDict.AddOrUpdate(voiceType, voiceLineList,
-                                            (_, lines) =>
-                                                lines.Append(new VoiceLine(wemPath, innerRespText, esm.FileName,
-                                                    voiceType)).ToList());
-                                    });
-                                }
-                            });
-
-                            resp.Responses.Where(innerResp => innerResp.TROTs.Count > 0).ForEach(innerResp =>
-                            {
-                                innerResp.Text.TryLookup(Language.English, out var dialogueText);
-                                Log.Debug($"Parsing inner response {dialogueText}");
-                                var editorId = innerResp.TROTs
-                                    .Select(trot => trot.UnknownVoiceType.TryResolve(linkCache)?.EditorID).First();
-
-                                if (editorId != null && dialogueText != null)
-                                {
-                                    var wemPath = BuildWemPath(esm.FileName, editorId, innerResp.WEMFile.ToString("x8"));
-                                    List<VoiceLine> voiceLineList = [new VoiceLine(wemPath, dialogueText, esm.FileName, editorId)];
-                                    tempDict.AddOrUpdate(editorId, voiceLineList, (_, lines) => lines.Append(new VoiceLine(wemPath, dialogueText, esm.FileName, editorId)).ToList());
-                                }
-                            });
-
+                            esmName = esm.FileName,
+                            num = questCount
                         });
+
+                        quest.DialogTopics.ForEach(dt =>
+                        {
+                            Log.Debug($"Parsing dialogue {dt.Name} in {esm.FileName}");
+                            // lastly, lets fall back on the conditions in the quest if there's no speakers
+                            var allVoiceTypesInQuest = GetQuestConditionalVoiceTypes(quest, linkCache);
+                            dt.Responses.ForEach(resp =>
+                            {
+                                Log.Debug(
+                                    $"Parsing response {dt.FormKey} with {resp.Responses.Count} responses in {esm.FileName}");
+                                resp.Responses.Where(innerResp => innerResp.TROTs.Count <= 0).ForEach(innerResp =>
+                                {
+                                    ProcessResponse(innerResp, esm, tempDict, wemMap);
+                                });
+                                resp.Responses.Where(innerResp => innerResp.TROTs.Count > 0).ForEach(innerResp =>
+                                {
+                                    ProcessResponse(innerResp, esm, tempDict, wemMap);
+                                });
+                            });
+                        });
+                        questCount++;
                     });
 
-                    questCount++;
-                });
-
-                var voiceTypes = tempDict.Select(voiceType =>
-                {
-                    var editorId = voiceType.Key;
-                    var lines = voiceType.Value;
-                    return new VoiceType()
+                    var voiceTypes = tempDict.Select(voiceType =>
                     {
-                        EditorId = editorId,
-                        VoiceLines = lines
-                    };
+                        var editorId = voiceType.Key;
+                        var lines = voiceType.Value;
+                        return new VoiceType()
+                        {
+                            EditorId = editorId,
+                            VoiceLines = lines
+                        };
 
-                }).OrderBy(voiceType => voiceType.EditorId).ToList();
+                    }).OrderBy(voiceType => voiceType.EditorId).ToList();
 
-                if (voiceTypes.Count > 0)
-                {
-                    return new Master(esm.FileName, voiceTypes);
-                }
+                    if (voiceTypes.Count > 0)
+                    {
+                        return new Master(esm.FileName, voiceTypes);
+                    }
 
-                return null;
-            }).Where(master => master != null).ToList();
+                    return null;
+                }).Where(master => master != null).ToList();
 
             SaveCache(tree);
+            var elapsedTime = DateTime.Now - startTime;
+            Log.Information("Found {0} lines in {1} seconds", lineCount, elapsedTime.TotalSeconds);
 
             return tree;
         }
 
-        private IEnumerable<string>? GetQuestConditionalVoiceTypes(IQuestGetter quest, ILinkCache<IStarfieldMod, IStarfieldModGetter> linkCache)
+        private IEnumerable<string>? GetQuestConditionalVoiceTypes(IQuestGetter quest,
+            ILinkCache<IStarfieldMod, IStarfieldModGetter> linkCache)
         {
             if (quest.DialogConditions.Any())
             {
@@ -163,8 +105,9 @@ namespace StarfieldVT.Core
                 var getIsVoiceTypeConditionDatas = questConditions.ToList();
                 if (getIsVoiceTypeConditionDatas.Any())
                 {
-                    var voiceTypeConditionFormKey = getIsVoiceTypeConditionDatas.Select(condition => condition.FirstParameter)
-                    .First().Link.FormKey;
+                    var voiceTypeConditionFormKey = getIsVoiceTypeConditionDatas
+                        .Select(condition => condition.FirstParameter)
+                        .First().Link.FormKey;
                     var voiceTypeConditionFormListKey = voiceTypeConditionFormKey.ToLink<IFormListGetter>();
 
                     return voiceTypeConditionFormListKey.TryResolve(linkCache)?.Items
@@ -187,6 +130,35 @@ namespace StarfieldVT.Core
         {
             Log.Information("Saving generated tree to cache");
             _voiceLineTreeCacheManager.SaveCurrentTree(tree);
+        }
+
+        private void ProcessResponse(IDialogResponseGetter innerResp, IModListingGetter<IStarfieldModGetter> esm,
+            ConcurrentDictionary<string, List<VoiceLine>> tempDict, Dictionary<string, List<WemFileReference>> wemDict)
+        {
+            innerResp.Text.TryLookup(Language.English, out var innerRespText);
+            var wemFileName = innerResp.WEMFile.ToString("x8") + ".wem";
+            // remove the mod index from the filename and prefix with 00 so we can find it in the archive
+            var processedWemFile = "00" + wemFileName.Substring(2);
+
+            try
+            {
+                var wemFileRefs = wemDict[processedWemFile];
+                wemFileRefs.ForEach(wemFile =>
+                {
+                    lineCount++;
+                    //var voiceType = Path.GetFileName(Path.GetDirectoryName(wemFile.WemPath));
+                    List<VoiceLine> voiceLineList =
+                        [new VoiceLine(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType)];
+                    tempDict.AddOrUpdate(wemFile.VoiceType, voiceLineList,
+                        (_, lines) =>
+                            lines.Append(new VoiceLine(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType))
+                                .ToList());
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                Log.Warning("Could not find wem file {0} in archive, continuing on.", processedWemFile);
+            }
         }
     }
 }
