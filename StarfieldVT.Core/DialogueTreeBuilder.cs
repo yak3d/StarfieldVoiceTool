@@ -138,7 +138,7 @@ namespace StarfieldVT.Core
                         VoiceLines = lines
                     };
 
-                }).ToList();
+                }).OrderBy(voiceType => voiceType.EditorId).ToList();
 
                 if (voiceTypes.Count > 0)
                 {
