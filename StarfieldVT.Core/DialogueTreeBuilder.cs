@@ -27,7 +27,7 @@ namespace StarfieldVT.Core
             var startTime = DateTime.Now;
             using var env = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
             var linkCache = env.LinkCache;
-            var tree = env.LoadOrder.PriorityOrder.Where(esm => esm is { Enabled: true, ExistsOnDisk: true }).Select(
+            var tree = env.LoadOrder.ListedOrder.Where(esm => esm is { Enabled: true, ExistsOnDisk: true }).Select(
                 esm =>
                 {
                     Log.Information($"Loading plugin {esm.FileName}");
@@ -41,7 +41,7 @@ namespace StarfieldVT.Core
 
                         progress.Report(new EsmLoadingProgress()
                         {
-                            esmName = quest.EditorID,
+                            esmName = esm.FileName,
                             num = questCount
                         });
 
@@ -90,6 +90,7 @@ namespace StarfieldVT.Core
             SaveCache(tree);
             var elapsedTime = DateTime.Now - startTime;
             Log.Information("Found {0} lines in {1} seconds", lineCount, elapsedTime.TotalSeconds);
+
             return tree;
         }
 

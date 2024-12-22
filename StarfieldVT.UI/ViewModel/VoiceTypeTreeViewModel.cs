@@ -64,8 +64,15 @@ public class VoiceTypeTreeViewModel
             var treeCache = _cacheManager.TryToLoadCache();
             try
             {
-                var tree = treeCache != null ? treeCache : _dialogueTreeBuilder.BuildTree(Progress).ToList();
+                var tree = treeCache ?? _dialogueTreeBuilder.BuildTree(Progress).ToList();
                 _searchableMasters = tree;
+
+                ((IProgress<EsmLoadingProgress>)Progress).Report(new EsmLoadingProgress()
+                {
+                    esmName = "",
+                    num = -1
+                });
+
                 return new ObservableCollection<Master>(tree);
             }
             catch (Exception e)

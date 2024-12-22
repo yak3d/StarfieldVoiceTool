@@ -151,6 +151,12 @@ namespace StarfieldVT
 
         private void VoiceTypeTree_OnProgressChanged(object? sender, VoiceTypeTree.VoiceTypeTreeProgressChangedEventHandler e)
         {
+            if (e.Progress.num < 0)
+            {
+                TreeBuilderProgressBar.Visibility = Visibility.Collapsed;
+                ProgressText.Content = "Loaded";
+                return;
+            }
             TreeBuilderProgressBar.Value = e.Progress.num;
             ProgressText.Content = $"Parsing quest {e.Progress.esmName}";
 
