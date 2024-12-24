@@ -122,6 +122,7 @@ jobs:
           name: starfieldvt-${{ env.SHORT_SHA }}
           path: ${{ env.Wap_Project_Directory }}\bin\Release\net8.0-windows
   release:
+    runs-on: windows-latest  # For a list of available runner types, refer to
     steps:
       - name: Create Release
         uses: softprops/action-gh-release@v2
