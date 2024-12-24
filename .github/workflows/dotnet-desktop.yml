@@ -106,8 +106,6 @@ jobs:
         run: echo ${{ env.COMMIT_SHORT_SHA }}
       - name: Download artifact from last job
         uses: actions/download-artifact@v4
-        with:
-          name: starfieldvt-${{ env.COMMIT_SHORT_SHA }}
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
