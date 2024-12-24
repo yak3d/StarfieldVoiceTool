@@ -84,37 +84,42 @@ public partial class VoiceLineTable : UserControl
 
     private IArchiveFile? getArchiveFileFromSelectedVoiceLine()
     {
-        var archivePrefix = this.ViewModel.SelectedVoiceLine.ModName.Replace(".esm", "").Replace(".esp", "");
-        var applicableArchives = Archive.GetApplicableArchivePaths(GameRelease.Starfield, this.dataFolder).Where(archive =>
-            archive.NameWithoutExtension.StartsWith("Starfield - Voices")
-            || archive.NameWithoutExtension.Contains(archivePrefix)
-            && archive.NameWithoutExtension.ToLower().Contains("voices")
-            && archive.NameWithoutExtension.ToLower().Contains("en"));
-
-        foreach (var archive in applicableArchives)
+        if (ViewModel.SelectedVoiceLine != null)
         {
-            var archiveReader = Archive.CreateReader(GameRelease.Starfield, archive);
-            var voiceFile = archiveReader.Files.FirstOrDefault(file => file.Path.Equals(this.ViewModel.SelectedVoiceLine.Filename, StringComparison.InvariantCultureIgnoreCase));
+            var archivePrefix = this.ViewModel.SelectedVoiceLine.ModName.Replace(".esm", "").Replace(".esp", "");
+            var applicableArchives = Archive.GetApplicableArchivePaths(GameRelease.Starfield, this.dataFolder).Where(archive =>
+                archive.NameWithoutExtension.StartsWith("Starfield - Voices")
+                || archive.NameWithoutExtension.Contains(archivePrefix)
+                && archive.NameWithoutExtension.ToLower().Contains("voices")
+                && archive.NameWithoutExtension.ToLower().Contains("en"));
 
-            if (voiceFile != null)
+            foreach (var archive in applicableArchives)
             {
-                return voiceFile;
+                var archiveReader = Archive.CreateReader(GameRelease.Starfield, archive);
+                var voiceFile = archiveReader.Files.FirstOrDefault(file => file.Path.Equals(this.ViewModel.SelectedVoiceLine.Filename, StringComparison.InvariantCultureIgnoreCase));
+
+                if (voiceFile != null)
+                {
+                    return voiceFile;
+                }
             }
         }
-
         return null;
     }
 
     private void DialogueGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        var voiceFile = getArchiveFileFromSelectedVoiceLine();
-        if (voiceFile != null)
+        if (ViewModel.SelectedVoiceLine != null)
         {
-            voiceManager.PlayVoiceLine(voiceFile);
-        }
-        else
-        {
-            Log.Warning($"Attempted to play selected voice line {ViewModel.SelectedVoiceLine.Filename}, but unable to find the file in the archive for {ViewModel.SelectedVoiceLine.ModName}");
+            var voiceFile = getArchiveFileFromSelectedVoiceLine();
+            if (voiceFile != null)
+            {
+                voiceManager.PlayVoiceLine(voiceFile);
+            }
+            else
+            {
+                Log.Warning($"Attempted to play selected voice line {ViewModel.SelectedVoiceLine.Filename}, but unable to find the file in the archive for {ViewModel.SelectedVoiceLine.ModName}");
+            }
         }
     }
 
