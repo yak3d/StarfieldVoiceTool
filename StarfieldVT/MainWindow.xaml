@@ -33,7 +33,7 @@
         <Menu Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="0">
             <MenuItem Header="_File" Click="MenuItem_Click">
                 <MenuItem Header="Delete Cache" Click="DeleteCache_Click"></MenuItem>
-                <MenuItem Header="Exit"></MenuItem>
+                <MenuItem Header="Exit" Click="MenuItem_OnClick"></MenuItem>
             </MenuItem>
         </Menu>
         <!-- <ToolBarTray Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"> -->

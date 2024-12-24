@@ -3,7 +3,7 @@
     public class VoiceLine
     {
         public string Filename { get; set; }
-        public string Dialogue { get; set; }
+        public string? Dialogue { get; set; }
         public string ModName { get; set; }
         public string VoiceType { get; set; }
 

@@ -16,7 +16,7 @@ namespace StarfieldVT.UI.ViewModel;
 public class VoiceLineTableViewModel : INotifyPropertyChanged
 {
     private VoiceLine _voiceLine;
-    public VoiceLine SelectedVoiceLine
+    public VoiceLine? SelectedVoiceLine
     {
         get => _voiceLine;
         set
@@ -110,7 +110,10 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
 
     private void OnSelectedVoiceLineChanged()
     {
-        Log.Information($"Chose voice line {SelectedVoiceLine.Filename}");
+        if (SelectedVoiceLine != null)
+        {
+            Log.Information($"Chose voice line {SelectedVoiceLine.Filename}");
+        }
     }
 
     private void OnFilterTextChanged()
@@ -130,7 +133,7 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
 
     private List<VoiceLine> filterVoiceLines()
     {
-        return _searchableVoiceLines.Where(line => line.Filename.Contains(VoiceLineFilterText) || line.Dialogue.Contains(VoiceLineFilterText)).ToList();
+        return _searchableVoiceLines.Where(line => line.Dialogue != null && (line.Filename.Contains(VoiceLineFilterText) || line.Dialogue.Contains(VoiceLineFilterText))).ToList();
     }
 
     #endregion

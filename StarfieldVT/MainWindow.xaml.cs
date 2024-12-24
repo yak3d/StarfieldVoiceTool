@@ -188,5 +188,10 @@ namespace StarfieldVT
             _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
                 new ObservableCollection<VoiceLine>(masterVoiceLines);
         }
+
+        private void MenuItem_OnClick(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Application.Current.Shutdown();
+        }
     }
 }
