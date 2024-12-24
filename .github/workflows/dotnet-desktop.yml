@@ -108,7 +108,9 @@ jobs:
         uses: actions/download-artifact@v4
       - name: ls files
         run: ls -l
+      - name: Zip Artifact
+        run: zip -r starfieldvt-${{  github.ref_name }} starfieldvt-${{ env.COMMIT_SHORT_SHA }}
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: star*
+          files: starfieldvt-*
