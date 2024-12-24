@@ -109,7 +109,7 @@ jobs:
       - name: ls files
         run: ls -l
       - name: Zip Artifact
-        run: zip -r starfieldvt-${{  github.ref_name }}.zip starfieldvt-${{ env.COMMIT_SHORT_SHA }}*/*
+        run: zip -j -r starfieldvt-${{  github.ref_name }}.zip starfieldvt-${{ env.COMMIT_SHORT_SHA }}*/*
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
