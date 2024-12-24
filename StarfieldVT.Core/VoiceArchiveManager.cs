@@ -7,6 +7,27 @@ using Serilog;
 
 namespace StarfieldVT.Core;
 
+public class WemKey(string masterName, string wemName)
+{
+    private string MasterName { get; } = masterName.ToLower();
+    private string WemName { get; } = wemName.ToLower();
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not WemKey other)
+        {
+            return false;
+        }
+
+        return MasterName.Equals(other.MasterName, StringComparison.InvariantCultureIgnoreCase) && WemName.Equals(other.WemName, StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    public override int GetHashCode()
+    {
+        return MasterName.GetHashCode() + WemName.GetHashCode();
+    }
+}
+
 public class VoiceArchiveManager
 {
     private DirectoryPath _dataFolder = GameLocations.GetDataFolder(GameRelease.Starfield);
@@ -38,11 +59,11 @@ public class VoiceArchiveManager
         return voiceFiles;
     }
 
-    public Dictionary<string, List<WemFileReference>> BuildWemMap(string modFileName)
+    public Dictionary<WemKey, List<WemFileReference>> BuildWemMap(string modFileName)
     {
         Log.Information("Building wem Map for {0}", modFileName);
         var archives = GetApplicableVoiceArchives(modFileName);
-        var wemDict = new Dictionary<string, List<WemFileReference>>();
+        var wemDict = new Dictionary<WemKey, List<WemFileReference>>();
 
         archives.ForEach(archive =>
         {
@@ -50,16 +71,22 @@ public class VoiceArchiveManager
             var archiveReader = Archive.CreateReader(GameRelease.Starfield, archive);
             archiveReader.Files.Where(file => file.Path.EndsWith(".wem")).ForEach(file =>
             {
+                // wem key needs to contain the esm name to properly namespace
+                var esmName = file.Path.Split("/").First(
+                    pathPart => pathPart.EndsWith(".esm", StringComparison.InvariantCultureIgnoreCase)
+                                || pathPart.EndsWith(".esp", StringComparison.InvariantCultureIgnoreCase
+                                ));
                 var wemFilename = Path.GetFileName(file.Path);
+                var wemKey = new WemKey(esmName, wemFilename);
                 var wemFileReference = new WemFileReference(file.Path);
 
-                if (wemDict.ContainsKey(wemFilename))
+                if (wemDict.ContainsKey(wemKey))
                 {
-                    wemDict[wemFilename].Add(wemFileReference);
+                    wemDict[wemKey].Add(wemFileReference);
                 }
                 else
                 {
-                    wemDict.Add(wemFilename, [wemFileReference]);
+                    wemDict.Add(wemKey, [wemFileReference]);
                 }
             });
         });
