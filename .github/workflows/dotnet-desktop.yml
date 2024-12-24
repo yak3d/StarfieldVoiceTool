@@ -41,11 +41,11 @@ name: StarfieldVT Build
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-
   build:
-
     strategy:
       matrix:
         configuration: [Release]
@@ -117,6 +117,14 @@ jobs:
       # Upload the MSIX package: https://github.com/marketplace/actions/upload-a-build-artifact
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
+        if: github.ref == 'refs/heads/main'
         with:
           name: starfieldvt-${{ env.SHORT_SHA }}
           path: ${{ env.Wap_Project_Directory }}\bin\Release\net8.0-windows
+  release:
+    steps:
+      - name: Create Release
+        uses: softprops/action-gh-rela
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          - starfieldvt-${{ env.SHORT_SHA }}
