@@ -124,6 +124,8 @@ jobs:
           path: ${{ env.Wap_Project_Directory }}\bin\Release\net8.0-windows
   release:
     runs-on: windows-latest  # For a list of available runner types, refer to
+    permissions:
+      contents: write
     steps:
       - name: Create Release
         uses: softprops/action-gh-release@v2
