@@ -39,10 +39,10 @@ namespace StarfieldVT.Core
                     {
                         Log.Debug($"Parsing quest {quest.EditorID} in {esm.FileName}");
 
-                        progress.Report(new EsmLoadingProgress()
+                        progress.Report(new EsmLoadingProgress
                         {
-                            esmName = esm.FileName,
-                            num = questCount
+                            EsmName = esm.FileName,
+                            Num = questCount
                         });
 
                         quest.DialogTopics.ForEach(dt =>
@@ -85,7 +85,7 @@ namespace StarfieldVT.Core
                     }
 
                     return null;
-                }).Where(master => master != null).ToList();
+                }).Where(master => master != null).OfType<Master>().ToList();
 
             SaveCache(tree);
             var elapsedTime = DateTime.Now - startTime;
@@ -148,15 +148,18 @@ namespace StarfieldVT.Core
                 {
                     lineCount++;
                     //var voiceType = Path.GetFileName(Path.GetDirectoryName(wemFile.WemPath));
-                    List<VoiceLine> voiceLineList =
-                        [new VoiceLine(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType)];
-                    tempDict.AddOrUpdate(wemFile.VoiceType, voiceLineList,
-                        (_, lines) =>
-                            lines.Append(new VoiceLine(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType))
-                                .ToList());
+                    if (innerRespText != null)
+                    {
+                        List<VoiceLine> voiceLineList =
+                            [new(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType)];
+                        tempDict.AddOrUpdate(wemFile.VoiceType, voiceLineList,
+                            (_, lines) =>
+                                lines.Append(new VoiceLine(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType))
+                                    .ToList());
+                    }
                 });
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
                 Log.Warning("Could not find wem file {0} in archive, continuing on.", processedWemFile);
             }

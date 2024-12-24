@@ -2,7 +2,7 @@
 {
     public class EsmLoadingProgress
     {
-        public int num { get; set; }
-        public string esmName { get; set; }
+        public int Num { get; init; }
+        public required string EsmName { get; init; }
     }
 }

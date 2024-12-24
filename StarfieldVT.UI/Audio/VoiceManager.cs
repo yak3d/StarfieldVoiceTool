@@ -2,9 +2,6 @@
 
 using Mutagen.Bethesda.Archives;
 
-using NAudio.Vorbis;
-using NAudio.Wave;
-
 using Serilog;
 
 namespace StarfieldVT.UI.Audio
@@ -20,9 +17,6 @@ namespace StarfieldVT.UI.Audio
                 return lazy.Value;
             }
         }
-
-        private readonly WaveOutEvent outputDevice = null;
-        private readonly VorbisWaveReader soundBeingPlayed = null;
 
         public void PlayVoiceLine(IArchiveFile voiceFileOne)
         {

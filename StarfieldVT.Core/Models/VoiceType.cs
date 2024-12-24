@@ -2,7 +2,7 @@
 {
     public class VoiceType
     {
-        public string EditorId { get; set; }
-        public IEnumerable<VoiceLine> VoiceLines { get; set; }
+        public required string EditorId { get; init; }
+        public required IEnumerable<VoiceLine> VoiceLines { get; init; }
     }
 }

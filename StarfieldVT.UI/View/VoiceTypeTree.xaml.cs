@@ -70,33 +70,27 @@ public partial class VoiceTypeTree : UserControl
     public event EventHandler<VoiceTypeTreeProgressChangedEventHandler>? ProgressChanged;
 
     public delegate void VoiceTypeSelectedHandler(object sender, VoiceTypeSelectedArgs<VoiceType> e);
-    public delegate void MasterSelectedHandler(object sender, MasterSelectedArgs<Master> e);
+    public delegate void MasterSelectedHandler(object sender, MasterSelectedArgs<Master?> e);
 
     private void EsmTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
         try
         {
-            if (e.NewValue is VoiceType)
+            switch (e.NewValue)
             {
-                var selectedVoiceType = (VoiceType)e.NewValue;
-                if (selectedVoiceType != null)
-                {
+                case VoiceType selectedVoiceType:
                     Log.Debug("Chose voice type: {voiceType}", selectedVoiceType.EditorId);
-                }
 
-                if (this.VoiceTypeSelected != null)
-                {
-                    this.VoiceTypeSelected(this, new VoiceTypeSelectedArgs<VoiceType>((VoiceType)e.OldValue, (VoiceType)e.NewValue));
-                }
-            }
-            else if (e.NewValue is Master master)
-            {
-                Log.Debug("Picked master with filename: {masterFileName}", master.Filename);
+                    VoiceTypeSelected?.Invoke(this, new VoiceTypeSelectedArgs<VoiceType>((VoiceType)e.OldValue, selectedVoiceType));
+                    break;
+                case Master master:
+                    Log.Debug("Picked master with filename: {masterFileName}", master.Filename);
 
-                this.MasterSelected?.Invoke(this, new MasterSelectedArgs<Master>(null, master));
+                    MasterSelected?.Invoke(this, new MasterSelectedArgs<Master?>(null, master));
+                    break;
             }
         }
-        catch (InvalidCastException ex)
+        catch (InvalidCastException)
         {
         }
         finally
@@ -107,19 +101,14 @@ public partial class VoiceTypeTree : UserControl
 
     private static void OnSearchTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        VoiceTypeTree? voiceTypeTree = d as VoiceTypeTree;
+        if (d is not VoiceTypeTree voiceTypeTree) return;
 
-        if (voiceTypeTree != null)
+        if (e.NewValue is not string newSearchQuery)
         {
-            var newSearchQuery = e.NewValue as string;
-
-            if (newSearchQuery == null)
-            {
-                Log.Error("The search query for the Voice Type Tree View was null");
-                return;
-            }
-
-            voiceTypeTree.VoiceTypeTreeViewModel.FilterVoiceTypes(newSearchQuery);
+            Log.Error("The search query for the Voice Type Tree View was null");
+            return;
         }
+
+        voiceTypeTree.VoiceTypeTreeViewModel.FilterVoiceTypes(newSearchQuery);
     }
 }

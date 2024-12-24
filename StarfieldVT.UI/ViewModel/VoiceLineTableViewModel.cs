@@ -15,27 +15,27 @@ namespace StarfieldVT.UI.ViewModel;
 
 public class VoiceLineTableViewModel : INotifyPropertyChanged
 {
-    private VoiceLine _voiceLine;
+    private VoiceLine? _voiceLine;
     public VoiceLine? SelectedVoiceLine
     {
         get => _voiceLine;
         set
         {
-            _voiceLine = value;
+            if (value != null) _voiceLine = value;
             OnPropertyChanged();
         }
     }
 
-    private List<VoiceLine>? _searchableVoiceLines;
-    private ObservableCollection<VoiceLine> _voiceLines = new();
+    private List<VoiceLine> _searchableVoiceLines = [];
+    private ObservableCollection<VoiceLine>? _voiceLines = [];
 
-    public ObservableCollection<VoiceLine> VoiceLines
+    public ObservableCollection<VoiceLine>? VoiceLines
     {
         get => _voiceLines;
         set
         {
             _voiceLines = value;
-            if (value != null && value.Count > 0)
+            if (value is { Count: > 0 })
             {
                 _searchableVoiceLines = value.ToList();
             }
@@ -50,7 +50,7 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
         }
     }
 
-    public string _voiceLineFilterText;
+    private string _voiceLineFilterText;
 
     public string VoiceLineFilterText
     {
@@ -65,20 +65,19 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
     public VoiceLineTableViewModel()
     {
         _voiceLines.CollectionChanged += VoiceLinesOnCollectionChanged;
+        _voiceLineFilterText = string.Empty;
     }
 
     private void VoiceLinesOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (_searchableVoiceLines == null && e.Action == NotifyCollectionChangedAction.Add)
+        if (e.Action != NotifyCollectionChangedAction.Add) return;
+        try
         {
-            try
-            {
-                // if (e.NewItems != null) _searchableVoiceLines = new List<VoiceLine>(e.NewItems)V
-            }
-            catch (InvalidCastException ex)
-            {
-                Log.Error(ex, "Error while loading voice lines");
-            }
+            // if (e.NewItems != null) _searchableVoiceLines = new List<VoiceLine>(e.NewItems)V
+        }
+        catch (InvalidCastException ex)
+        {
+            Log.Error(ex, "Error while loading voice lines");
         }
     }
 
@@ -120,15 +119,15 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrWhiteSpace(VoiceLineFilterText))
         {
-            VoiceLines.Clear();
-            VoiceLines.AddRange(_searchableVoiceLines);
+            VoiceLines?.Clear();
+            VoiceLines?.AddRange(_searchableVoiceLines);
         }
 
         var filteredVoiceLines = filterVoiceLines();
         Log.Debug($"Filter with {VoiceLineFilterText} found {filteredVoiceLines.Count()} result(s)");
 
-        VoiceLines.Clear();
-        VoiceLines.AddRange(filteredVoiceLines);
+        VoiceLines?.Clear();
+        VoiceLines?.AddRange(filteredVoiceLines);
     }
 
     private List<VoiceLine> filterVoiceLines()

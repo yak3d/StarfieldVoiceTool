@@ -23,19 +23,9 @@ using VoiceType = StarfieldVT.Core.Models.VoiceType;
 
 namespace StarfieldVT
 {
-    public class MainWindowModel : INotifyPropertyChanged
+    public sealed class MainWindowModel : INotifyPropertyChanged
     {
-        // private ObservableCollection<VoiceLine> _voiceLines2 = new ObservableCollection<VoiceLine>();
-        // public ObservableCollection<VoiceLine> VoiceLines2
-        // {
-        //     get => _voiceLines2;
-        //     set
-        //     {
-        //         _voiceLines2 = value;
-        //         OnPropertyChanged();
-        //     }
-        // }
-        public VoiceLineTableViewModel VoiceLineTableViewModel { get; set; }
+        public VoiceLineTableViewModel? VoiceLineTableViewModel { get; private init; }
 
         private string _searchBarText = "";
         public string SearchBarText
@@ -48,15 +38,12 @@ namespace StarfieldVT
             }
         }
 
-        public VoiceLine SelectedVoiceLine { get; set; }
-
         public static MainWindowModel GetMainWindowModel()
         {
-            var mainWindowModel = new MainWindowModel()
+            var mainWindowModel = new MainWindowModel
             {
                 VoiceLineTableViewModel = new VoiceLineTableViewModel(),
                 SearchBarText = "",
-                SelectedVoiceLine = null
             };
 
             return mainWindowModel;
@@ -64,12 +51,12 @@ namespace StarfieldVT
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;
             field = value;
@@ -82,10 +69,10 @@ namespace StarfieldVT
     /// </summary>
     public partial class MainWindow : Window
     {
-        public ObservableCollection<Master> Masters { get; set; }
+        public required ObservableCollection<Master> Masters { get; set; }
 
         readonly DialogueTreeBuilder dialogueTreeBuilder = new DialogueTreeBuilder();
-        readonly List<Master> tree;
+        readonly List<Master> _tree = [];
 
         private readonly VoiceManager voiceManager = VoiceManager.Instance;
         private readonly VoiceLineTreeCacheManager cacheManager = new VoiceLineTreeCacheManager();
@@ -135,7 +122,7 @@ namespace StarfieldVT
         {
             var newSearchQuery = ((TextBox)sender).Text;
             _mainWindowModel.SearchBarText = newSearchQuery;
-            var filteredVoiceTypes = tree.Where(master => master.VoiceTypes.Any(vt => vt.EditorId.StartsWith(newSearchQuery))).Select(master => new Master(master.Filename, master.VoiceTypes.Where(vt => vt.EditorId.StartsWith(newSearchQuery)).ToList()));
+            var filteredVoiceTypes = _tree.Where(master => master.VoiceTypes.Any(vt => vt.EditorId.StartsWith(newSearchQuery))).Select(master => new Master(master.Filename, master.VoiceTypes.Where(vt => vt.EditorId.StartsWith(newSearchQuery)).ToList()));
             this.Masters.Clear();
             this.Masters.Add(filteredVoiceTypes);
 
@@ -144,6 +131,7 @@ namespace StarfieldVT
 
         private void VoiceTypeTree_OnVoiceTypeSelected(object sender, VoiceTypeSelectedArgs<VoiceType> e)
         {
+            if (_mainWindowModel.VoiceLineTableViewModel == null) return;
             _mainWindowModel.VoiceLineTableViewModel.VoiceLines = null;
             _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
                 new ObservableCollection<VoiceLine>(e.NewValue.VoiceLines);
@@ -151,14 +139,14 @@ namespace StarfieldVT
 
         private void VoiceTypeTree_OnProgressChanged(object? sender, VoiceTypeTree.VoiceTypeTreeProgressChangedEventHandler e)
         {
-            if (e.Progress.num < 0)
+            if (e.Progress.Num < 0)
             {
                 TreeBuilderProgressBar.Visibility = Visibility.Collapsed;
                 ProgressText.Content = "Loaded";
                 return;
             }
-            TreeBuilderProgressBar.Value = e.Progress.num;
-            ProgressText.Content = $"Parsing quest {e.Progress.esmName}";
+            TreeBuilderProgressBar.Value = e.Progress.Num;
+            ProgressText.Content = $"Parsing quest {e.Progress.EsmName}";
 
             if (!(TreeBuilderProgressBar.Value >= TreeBuilderProgressBar.Maximum)) return;
             TreeBuilderProgressBar.Visibility = Visibility.Collapsed;
@@ -184,6 +172,7 @@ namespace StarfieldVT
         {
             var masterVoiceLines = e.NewValue.VoiceTypes.Select(vt => vt.VoiceLines)
                 .Aggregate((currentLines, newLines) => [.. currentLines, .. newLines]);
+            if (_mainWindowModel.VoiceLineTableViewModel == null) return;
             _mainWindowModel.VoiceLineTableViewModel.VoiceLines = null;
             _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
                 new ObservableCollection<VoiceLine>(masterVoiceLines);
