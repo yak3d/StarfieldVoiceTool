@@ -106,7 +106,9 @@ jobs:
         run: echo ${{ env.COMMIT_SHORT_SHA }}
       - name: Download artifact from last job
         uses: actions/download-artifact@v4
+      - name: ls files
+        run: ls -l
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: starfieldvt-${{ env.COMMIT_SHORT_SHA }}
+          files: star*
