@@ -16,12 +16,12 @@ public class FfmpegDependencyManager
         "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v5.1/ffmpeg-5.1-win-64.zip";
 
     [DllImport("shlwapi.dll", CharSet = CharSet.Auto, SetLastError = false)]
-    static extern bool PathFindOnPath([In, Out] StringBuilder pszFile, [In] String[] ppszOtherDirs);
+    static extern bool PathFindOnPath([In, Out] StringBuilder pszFile, [In] string[] ppszOtherDirs);
 
     public bool FfmpegOnPath()
     {
         var sb = new StringBuilder("ffmpeg.exe", 260);
-        if (PathFindOnPath(sb, null))
+        if (PathFindOnPath(sb, null!))
         {
             var pathToFfmpeg = sb.ToString();
 

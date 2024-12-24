@@ -12,7 +12,7 @@ namespace StarfieldVT.UI.ViewModel;
 
 public class VoiceTypeTreeViewModel
 {
-    public NotifyTaskCompletion<ObservableCollection<Master>> Masters
+    public NotifyTaskCompletion<ObservableCollection<Master>?> Masters
     {
         get;
         set;
@@ -26,33 +26,28 @@ public class VoiceTypeTreeViewModel
 
     private readonly DialogueTreeBuilder _dialogueTreeBuilder;
     private readonly VoiceLineTreeCacheManager _cacheManager;
-    public Progress<EsmLoadingProgress> Progress;
+    private Progress<EsmLoadingProgress> _progress = new();
     public event EventHandler<VoiceTypeTreeViewModelProgressChangedEventHandler>? ProgressChanged;
 
-    public class VoiceTypeTreeViewModelProgressChangedEventHandler : EventArgs
+    public class VoiceTypeTreeViewModelProgressChangedEventHandler(EsmLoadingProgress progress) : EventArgs
     {
         public EsmLoadingProgress Progress
         {
             get;
             private set;
-        }
-
-        public VoiceTypeTreeViewModelProgressChangedEventHandler(EsmLoadingProgress progress)
-        {
-            Progress = progress;
-        }
+        } = progress;
     }
 
     public VoiceTypeTreeViewModel()
     {
         _dialogueTreeBuilder = new DialogueTreeBuilder();
         _cacheManager = new VoiceLineTreeCacheManager();
-        Masters = new NotifyTaskCompletion<ObservableCollection<Master>>(LoadVoiceTypeTree());
+        Masters = new NotifyTaskCompletion<ObservableCollection<Master>>(LoadVoiceTypeTree()!)!;
     }
 
-    public async Task<ObservableCollection<Master>> LoadVoiceTypeTree()
+    private async Task<ObservableCollection<Master>> LoadVoiceTypeTree()
     {
-        Progress = new Progress<EsmLoadingProgress>(value =>
+        _progress = new Progress<EsmLoadingProgress>(value =>
         {
             if (ProgressChanged != null)
             {
@@ -64,13 +59,13 @@ public class VoiceTypeTreeViewModel
             var treeCache = _cacheManager.TryToLoadCache();
             try
             {
-                var tree = treeCache ?? _dialogueTreeBuilder.BuildTree(Progress).ToList();
+                var tree = treeCache ?? _dialogueTreeBuilder.BuildTree(_progress).ToList();
                 _searchableMasters = tree;
 
-                ((IProgress<EsmLoadingProgress>)Progress).Report(new EsmLoadingProgress()
+                ((IProgress<EsmLoadingProgress>)_progress).Report(new EsmLoadingProgress
                 {
-                    esmName = "",
-                    num = -1
+                    EsmName = "",
+                    Num = -1
                 });
 
                 return new ObservableCollection<Master>(tree);

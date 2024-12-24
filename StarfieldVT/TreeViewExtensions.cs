@@ -33,10 +33,10 @@ namespace StarfieldVT
             }
         }
 
-        private static void FilterRecursively(TreeView tree, TreeViewItem item, Predicate<object> predicate)
+        private static void FilterRecursively(TreeView tree, TreeViewItem? item, Predicate<object> predicate)
         {
             if (item == null) return;
-            ICollectionView view = CollectionViewSource.GetDefaultView(item.ItemsSource);
+            var view = CollectionViewSource.GetDefaultView(item.ItemsSource);
             if (view == null)
                 return;
             view.Filter = predicate;
