@@ -133,16 +133,17 @@ namespace StarfieldVT.Core
         }
 
         private void ProcessResponse(IDialogResponseGetter innerResp, IModListingGetter<IStarfieldModGetter> esm,
-            ConcurrentDictionary<string, List<VoiceLine>> tempDict, Dictionary<string, List<WemFileReference>> wemDict)
+            ConcurrentDictionary<string, List<VoiceLine>> tempDict, Dictionary<WemKey, List<WemFileReference>> wemDict)
         {
             innerResp.Text.TryLookup(Language.English, out var innerRespText);
             var wemFileName = innerResp.WEMFile.ToString("x8") + ".wem";
             // remove the mod index from the filename and prefix with 00 so we can find it in the archive
             var processedWemFile = "00" + wemFileName.Substring(2);
+            var wemKey = new WemKey(esm.FileName, processedWemFile);
 
             try
             {
-                var wemFileRefs = wemDict[processedWemFile];
+                var wemFileRefs = wemDict[wemKey];
                 wemFileRefs.ForEach(wemFile =>
                 {
                     lineCount++;
