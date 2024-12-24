@@ -98,7 +98,7 @@ jobs:
       - name: Download artifact from last job
         uses: actions/download-artifact@v4
         with:
-          name: starfieldvt-${{ env.SHORT_SHA }}
+          name: starfieldvt-${{ steps.vars.outputs.sha_short }}
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
