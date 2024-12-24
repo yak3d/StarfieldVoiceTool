@@ -124,7 +124,7 @@ jobs:
   release:
     steps:
       - name: Create Release
-        uses: softprops/action-gh-rela
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           - starfieldvt-${{ env.SHORT_SHA }}
