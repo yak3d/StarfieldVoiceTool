@@ -91,6 +91,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
       # gets the short sha to append it to the archive name
       - name: Set outputs
         id: vars
