@@ -6,6 +6,8 @@ on:
       - main
     tags:
       - 'v**' # Push events to matching v*, i.e. v1.0, v20.15.10
+  pull_request:
+      branches: [ "main" ]
 
 jobs:
   build:
@@ -75,6 +77,7 @@ jobs:
       
       # copy the codebook
       - name: Copy Codebook
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
         run: Copy-Item -Path ".\BnkExtractor\BnkExtractor\Ww2ogg\Codebooks\packed_codebooks_aoTuV_603.bin" -Destination $env:Wap_Project_Directory\bin\Release\net8.0-windows
       
       # Upload the MSIX package: https://github.com/marketplace/actions/upload-a-build-artifact
