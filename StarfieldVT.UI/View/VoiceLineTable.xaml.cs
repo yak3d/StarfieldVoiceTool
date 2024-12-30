@@ -30,7 +30,6 @@ public partial class VoiceLineTable : UserControl
         // DataContext = new VoiceLineTableViewModel();
         DataContextChanged += (sender, args) =>
         {
-            Log.Information("times have changed");
             if (DataContext != null && DataContext is VoiceLineTableViewModel vm)
             {
                 ViewModel.PropertyChanged += (sender, args) =>

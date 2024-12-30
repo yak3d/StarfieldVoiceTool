@@ -15,7 +15,7 @@ namespace StarfieldVT
         protected override void OnStartup(StartupEventArgs e)
         {
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Information()
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .WriteTo.File(

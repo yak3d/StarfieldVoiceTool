@@ -1,10 +1,11 @@
 ﻿using System.Collections.ObjectModel;
-
+using System.Windows;
 using DynamicData;
 
 using Serilog;
 
 using StarfieldVT.Core;
+using StarfieldVT.Core.Filesystem;
 using StarfieldVT.Core.Models;
 
 
@@ -24,7 +25,6 @@ public class VoiceTypeTreeViewModel
     /// </summary>
     private List<Master> _searchableMasters = new();
 
-    private readonly DialogueTreeBuilder _dialogueTreeBuilder;
     private readonly VoiceLineTreeCacheManager _cacheManager;
     private Progress<EsmLoadingProgress> _progress = new();
     public event EventHandler<VoiceTypeTreeViewModelProgressChangedEventHandler>? ProgressChanged;
@@ -40,7 +40,6 @@ public class VoiceTypeTreeViewModel
 
     public VoiceTypeTreeViewModel()
     {
-        _dialogueTreeBuilder = new DialogueTreeBuilder();
         _cacheManager = new VoiceLineTreeCacheManager();
         Masters = new NotifyTaskCompletion<ObservableCollection<Master>>(LoadVoiceTypeTree()!)!;
     }
@@ -59,7 +58,8 @@ public class VoiceTypeTreeViewModel
             var treeCache = _cacheManager.TryToLoadCache();
             try
             {
-                var tree = treeCache ?? _dialogueTreeBuilder.BuildTree(_progress).ToList();
+                var dialogueTreeBuilder = new DialogueTreeBuilder();
+                var tree = treeCache ?? dialogueTreeBuilder.BuildTree(_progress).ToList();
                 _searchableMasters = tree;
 
                 ((IProgress<EsmLoadingProgress>)_progress).Report(new EsmLoadingProgress
@@ -75,6 +75,20 @@ public class VoiceTypeTreeViewModel
                 Log.Error(e, e.Message);
                 throw;
             }
+        }).ContinueWith(faultedTask =>
+        {
+            var e = faultedTask.Exception;
+            if (e == null) return faultedTask.Result;
+            Log.Error(e, e.Message);
+
+            // notify user an error has occured with a message box
+            MessageBox.Show(
+                $"Failed to load voice types, see logs for error at {AppDataFolder.GetLogDir()}",
+                "Loading Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+                );
+            throw e;
         });
     }
 

@@ -69,33 +69,24 @@ public partial class VoiceTypeTree : UserControl
     [Description("Invoked when the progress of loading the data changes")]
     public event EventHandler<VoiceTypeTreeProgressChangedEventHandler>? ProgressChanged;
 
-    public delegate void VoiceTypeSelectedHandler(object sender, VoiceTypeSelectedArgs<VoiceType> e);
-    public delegate void MasterSelectedHandler(object sender, MasterSelectedArgs<Master?> e);
+    public delegate void VoiceTypeSelectedHandler(object sender, VoiceTypeSelectedArgs<IVoiceTypeTreeItem> e);
+    public delegate void MasterSelectedHandler(object sender, MasterSelectedArgs<IVoiceTypeTreeItem> e);
 
     private void EsmTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
-        try
+        switch (e.NewValue)
         {
-            switch (e.NewValue)
-            {
-                case VoiceType selectedVoiceType:
-                    Log.Debug("Chose voice type: {voiceType}", selectedVoiceType.EditorId);
+            case VoiceType selectedVoiceType:
+                Log.Debug("Chose voice type: {voiceType}", selectedVoiceType.EditorId);
 
-                    VoiceTypeSelected?.Invoke(this, new VoiceTypeSelectedArgs<VoiceType>((VoiceType)e.OldValue, selectedVoiceType));
-                    break;
-                case Master master:
-                    Log.Debug("Picked master with filename: {masterFileName}", master.Filename);
+                VoiceTypeSelected?.Invoke(this, new VoiceTypeSelectedArgs<IVoiceTypeTreeItem>((IVoiceTypeTreeItem)e.OldValue, selectedVoiceType));
 
-                    MasterSelected?.Invoke(this, new MasterSelectedArgs<Master?>(null, master));
-                    break;
-            }
-        }
-        catch (InvalidCastException)
-        {
-        }
-        finally
-        {
-            e.Handled = true;
+                break;
+            case Master master:
+                Log.Debug("Picked master with filename: {masterFileName}", master.Filename);
+
+                MasterSelected?.Invoke(this, new MasterSelectedArgs<IVoiceTypeTreeItem>((IVoiceTypeTreeItem)e.OldValue, master));
+                break;
         }
     }
 

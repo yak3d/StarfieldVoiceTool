@@ -20,7 +20,8 @@ namespace StarfieldVT.Core
     {
         private readonly VoiceLineTreeCacheManager _voiceLineTreeCacheManager = new VoiceLineTreeCacheManager();
         private readonly VoiceArchiveManager _voiceArchiveManager = new VoiceArchiveManager();
-        private int lineCount = 0;
+        private int _lineCount = 0;
+        private readonly LuceneManager _luceneManager = LuceneManager.Instance();
 
         public List<Models.Master> BuildTree(IProgress<EsmLoadingProgress> progress)
         {
@@ -73,6 +74,7 @@ namespace StarfieldVT.Core
                         var lines = voiceType.Value;
                         return new VoiceType()
                         {
+                            FromMaster = esm.FileName,
                             EditorId = editorId,
                             VoiceLines = lines
                         };
@@ -89,7 +91,9 @@ namespace StarfieldVT.Core
 
             SaveCache(tree);
             var elapsedTime = DateTime.Now - startTime;
-            Log.Information("Found {0} lines in {1} seconds", lineCount, elapsedTime.TotalSeconds);
+            Log.Information("Found {0} lines in {1} seconds", _lineCount, elapsedTime.TotalSeconds);
+
+            _luceneManager.CommitWrites();
 
             return tree;
         }
@@ -146,16 +150,19 @@ namespace StarfieldVT.Core
                 var wemFileRefs = wemDict[wemKey];
                 wemFileRefs.ForEach(wemFile =>
                 {
-                    lineCount++;
+                    _lineCount++;
                     //var voiceType = Path.GetFileName(Path.GetDirectoryName(wemFile.WemPath));
                     if (innerRespText != null)
                     {
+                        var voiceLine = new VoiceLine(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType);
                         List<VoiceLine> voiceLineList =
-                            [new(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType)];
+                            [voiceLine];
                         tempDict.AddOrUpdate(wemFile.VoiceType, voiceLineList,
                             (_, lines) =>
-                                lines.Append(new VoiceLine(wemFile.WemPath, innerRespText, esm.FileName, wemFile.VoiceType))
+                                lines.Append(voiceLine)
                                     .ToList());
+
+                        _luceneManager.AddDocumentWithoutCommitting(voiceLine);
                     }
                 });
             }
