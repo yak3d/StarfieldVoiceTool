@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-
 using DynamicData;
 
 using Mutagen.Bethesda;
@@ -71,7 +70,6 @@ namespace StarfieldVT
     {
         public required ObservableCollection<Master> Masters { get; set; }
 
-        readonly DialogueTreeBuilder dialogueTreeBuilder = new DialogueTreeBuilder();
         readonly List<Master> _tree = [];
 
         private readonly VoiceManager voiceManager = VoiceManager.Instance;
@@ -129,12 +127,18 @@ namespace StarfieldVT
             e.Handled = true;
         }
 
-        private void VoiceTypeTree_OnVoiceTypeSelected(object sender, VoiceTypeSelectedArgs<VoiceType> e)
+        private void VoiceTypeTree_OnVoiceTypeSelected(object sender, VoiceTypeSelectedArgs<IVoiceTypeTreeItem> e)
         {
-            if (_mainWindowModel.VoiceLineTableViewModel == null) return;
-            _mainWindowModel.VoiceLineTableViewModel.VoiceLines = null;
-            _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
-                new ObservableCollection<VoiceLine>(e.NewValue.VoiceLines);
+            if (e.NewValue is VoiceType)
+            {
+                var selectedVoiceType = (VoiceType)e.NewValue;
+                if (_mainWindowModel.VoiceLineTableViewModel == null) return;
+                _mainWindowModel.VoiceLineTableViewModel.VoiceLines = null;
+                _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
+                    new ObservableCollection<VoiceLine>(selectedVoiceType.VoiceLines);
+                _mainWindowModel.VoiceLineTableViewModel.SelectedVoiceType = selectedVoiceType.EditorId;
+                _mainWindowModel.VoiceLineTableViewModel.SelectedMaster = selectedVoiceType.FromMaster;
+            }
         }
 
         private void VoiceTypeTree_OnProgressChanged(object? sender, VoiceTypeTree.VoiceTypeTreeProgressChangedEventHandler e)
@@ -168,14 +172,19 @@ namespace StarfieldVT
             AudioOutputManager.Instance.StopSound();
         }
 
-        private void VoiceTypeTree_OnMasterSelected(object sender, MasterSelectedArgs<Master> e)
+        private void VoiceTypeTree_OnMasterSelected(object sender, MasterSelectedArgs<IVoiceTypeTreeItem> masterSelectedArgs)
         {
-            var masterVoiceLines = e.NewValue.VoiceTypes.Select(vt => vt.VoiceLines)
-                .Aggregate((currentLines, newLines) => [.. currentLines, .. newLines]);
-            if (_mainWindowModel.VoiceLineTableViewModel == null) return;
-            _mainWindowModel.VoiceLineTableViewModel.VoiceLines = null;
-            _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
-                new ObservableCollection<VoiceLine>(masterVoiceLines);
+            if (masterSelectedArgs.NewValue is Master master)
+            {
+                var masterVoiceLines = master.VoiceTypes.Select(vt => vt.VoiceLines)
+                    .Aggregate((currentLines, newLines) => [.. currentLines, .. newLines]);
+                if (_mainWindowModel.VoiceLineTableViewModel == null) return;
+                _mainWindowModel.VoiceLineTableViewModel.VoiceLines = null;
+                _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
+                    new ObservableCollection<VoiceLine>(masterVoiceLines);
+                _mainWindowModel.VoiceLineTableViewModel.SelectedMaster = master.Filename;
+                _mainWindowModel.VoiceLineTableViewModel.SelectedVoiceType = null;
+            }
         }
 
         private void MenuItem_OnClick(object sender, RoutedEventArgs e)

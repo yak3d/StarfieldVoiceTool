@@ -8,12 +8,12 @@ using Mutagen.Bethesda;
 using Noggog;
 
 using Serilog;
-
+using StarfieldVT.Core;
 using StarfieldVT.Core.Models;
 
 namespace StarfieldVT.UI.ViewModel;
 
-public class VoiceLineTableViewModel : INotifyPropertyChanged
+public sealed class VoiceLineTableViewModel : INotifyPropertyChanged
 {
     private VoiceLine? _voiceLine;
     public VoiceLine? SelectedVoiceLine
@@ -26,8 +26,35 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
         }
     }
 
+    private string? _selectedMaster;
+    private string? _selectedVoiceType;
+
+    public string? SelectedMaster
+    {
+        get => _selectedMaster;
+        set
+        {
+            if (value != null)
+            {
+                _selectedMaster = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string? SelectedVoiceType
+    {
+        get => _selectedVoiceType;
+        set
+        {
+            _selectedVoiceType = value;
+            OnPropertyChanged();
+        }
+    }
+
     private List<VoiceLine> _searchableVoiceLines = [];
     private ObservableCollection<VoiceLine>? _voiceLines = [];
+    private readonly LuceneManager _luceneManager = LuceneManager.Instance();
 
     public ObservableCollection<VoiceLine>? VoiceLines
     {
@@ -43,7 +70,7 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
             if (_voiceLines != null && !string.IsNullOrEmpty(_voiceLineFilterText))
             {
                 _voiceLines.Clear();
-                _voiceLines.AddRange(filterVoiceLines());
+                _voiceLines.AddRange(FilterVoiceLines());
             }
 
             OnPropertyChanged();
@@ -83,7 +110,7 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         switch (propertyName)
         {
@@ -93,11 +120,17 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
             case nameof(VoiceLineFilterText):
                 OnFilterTextChanged();
                 break;
+            case nameof(SelectedMaster):
+                OnSelectedMasterChanged();
+                break;
+            case nameof(SelectedVoiceType):
+                OnSelectedVoiceTypeChanged();
+                break;
         }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value)) return false;
         field = value;
@@ -121,18 +154,31 @@ public class VoiceLineTableViewModel : INotifyPropertyChanged
         {
             VoiceLines?.Clear();
             VoiceLines?.AddRange(_searchableVoiceLines);
+            return;
         }
 
-        var filteredVoiceLines = filterVoiceLines();
+        var filteredVoiceLines = FilterVoiceLines();
         Log.Debug($"Filter with {VoiceLineFilterText} found {filteredVoiceLines.Count()} result(s)");
 
         VoiceLines?.Clear();
         VoiceLines?.AddRange(filteredVoiceLines);
     }
 
-    private List<VoiceLine> filterVoiceLines()
+    private void OnSelectedMasterChanged()
     {
-        return _searchableVoiceLines.Where(line => line.Dialogue != null && (line.Filename.Contains(VoiceLineFilterText) || line.Dialogue.Contains(VoiceLineFilterText))).ToList();
+        Log.Debug("Chose master {0}", SelectedMaster);
+        OnFilterTextChanged();
+    }
+
+    private void OnSelectedVoiceTypeChanged()
+    {
+        Log.Debug("chose voice type {0}", SelectedVoiceType);
+        OnFilterTextChanged();
+    }
+
+    private List<VoiceLine> FilterVoiceLines()
+    {
+        return _luceneManager.FreeTextSearch(VoiceLineFilterText, SelectedMaster, SelectedVoiceType).ToList();
     }
 
     #endregion

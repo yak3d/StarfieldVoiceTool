@@ -50,26 +50,23 @@ namespace StarfieldVT.Core
 
         public List<Master>? TryToLoadCache()
         {
-            if (cacheExists())
+            if (!cacheExists()) return null;
+            Log.Information($"Loading cache from {_cachePath}");
+            var cacheText = File.ReadAllText(this._cachePath);
+
+            try
             {
-                Log.Information($"Loading cache from {_cachePath}");
-                var cacheText = File.ReadAllText(this._cachePath);
-
-                try
+                var cache = JsonSerializer.Deserialize<CacheFile>(cacheText);
+                if (cache == null || CacheIsUpToDate(cache))
                 {
-                    var cache = JsonSerializer.Deserialize<CacheFile>(cacheText);
-                    if (cache == null || CacheIsUpToDate(cache))
-                    {
-                        return null;
-                    }
-
-                    return cache.Masters;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning($"Failed to load cache from {_cachePath} and will invalidate + reload instead: {ex.Message}");
+                    return null;
                 }
 
+                return cache.Masters;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"Failed to load cache from {_cachePath} and will invalidate + reload instead: {ex.Message}");
             }
 
             return null;

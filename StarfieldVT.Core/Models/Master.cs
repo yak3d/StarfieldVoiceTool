@@ -1,6 +1,6 @@
 ﻿namespace StarfieldVT.Core.Models
 {
-    public class Master
+    public class Master : IVoiceTypeTreeItem
     {
         public string Filename { get; }
         public IEnumerable<VoiceType> VoiceTypes { get; }
