@@ -1,4 +1,4 @@
-﻿![Workflow](https://github.com/yak3d/StarfieldVFRT/actions/workflows/dotnet-desktop.yml/badge.svg?branch=main)
+﻿![Workflow](https://github.com/yak3d/StarfieldVoiceTool/actions/workflows/dotnet-desktop.yml/badge.svg?branch=main)  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Starfield Voice Tool
 This tool is used to find voice lines by voice type in Starfield, filter them, play them and export them. 
