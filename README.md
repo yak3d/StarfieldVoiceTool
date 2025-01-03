@@ -15,7 +15,7 @@ This tool is used to find voice lines by voice type in Starfield, filter them, p
 1. Ensure your load order in `plugins.txt` or your Mod Manager is set with the plugins you want VFRT to scan
 2. Execute `StarfieldVFRT.exe`, the first start up will take some time as it goes through your load order and finds the dialogue lines
 3. This data is cached at `%LOCALAPPDATA%\StarfieldVFRT\cache.json`
-   4. When the game or StarfieldVFRT updates, it is imperative to either delete this file or go to **File** --> **Delete Cache** and then restart `StarfieldVFRT.exe`
+   * When the game or StarfieldVFRT updates, it is imperative to either delete this file or go to **File** --> **Delete Cache** and then restart `StarfieldVFRT.exe`
 5. During startup, `ffmpeg.exe` will be downloaded to the installation directory. It is sourced from https://github.com/ffbinaries/ffbinaries-prebuilt/releases. This will only happen once and is required to convert from `wem` to `wav`.
 
 ## Troubleshooting
