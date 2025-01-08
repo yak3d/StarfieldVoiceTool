@@ -44,7 +44,6 @@ public class LuceneManager : IDisposable
             {
                 OpenMode = OpenMode.CREATE_OR_APPEND
             };
-            Log.Information("Creating Index Writer");
             _dir = FSDirectory.Open(IndexPath);
             _writer = new IndexWriter(_dir, _indexConfig);
             _writer.Commit();
@@ -56,9 +55,15 @@ public class LuceneManager : IDisposable
         }
     }
 
+    public void DeleteIndex()
+    {
+        _writer.DeleteAll();
+        _writer.Commit();
+    }
+
     public void AddDocumentWithoutCommitting(VoiceLine voiceLine)
     {
-        Log.Information(
+        Log.Debug(
             "Adding document with voice type {0} dialogue {1} to lucene index at {2}",
             voiceLine.VoiceType,
             voiceLine.Dialogue,
