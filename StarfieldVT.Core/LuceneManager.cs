@@ -91,21 +91,21 @@ public class LuceneManager : IDisposable
 
         var parser = new QueryParser(AppLuceneVersion, "dialogue", _analyzer);
 
-        var query = parser.Parse(searchText);
-        var testQuery = new BooleanQuery()
+        var userQuery = parser.Parse(searchText);
+        var boolQuery = new BooleanQuery()
         {
-            { query, Occur.MUST },
+            { userQuery, Occur.MUST },
             { new TermQuery(new Term("master", master)), Occur.MUST }
         };
 
         if (voiceType != null)
         {
-            testQuery.Add(new TermQuery(new Term("voiceType", voiceType)), Occur.MUST);
+            boolQuery.Add(new TermQuery(new Term("voiceType", voiceType)), Occur.MUST);
         }
 
-        Log.Debug("Searching with query: {0}", testQuery.ToString());
+        Log.Debug("Searching with query: {0}", boolQuery.ToString());
 
-        var docs = searcher.Search(testQuery, int.MaxValue);
+        var docs = searcher.Search(boolQuery, int.MaxValue);
         var fullDocs = docs.ScoreDocs.Select(doc =>
         {
             var fullDoc = searcher.Doc(doc.Doc);
