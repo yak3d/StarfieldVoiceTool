@@ -18,6 +18,11 @@ This tool is used to find voice lines by voice type in Starfield, filter them, p
    * When the game or StarfieldVFRT updates, it is imperative to either delete this file or go to **File** --> **Delete Cache** and then restart `StarfieldVFRT.exe`
 5. During startup, `ffmpeg.exe` will be downloaded to the installation directory. It is sourced from https://github.com/ffbinaries/ffbinaries-prebuilt/releases. This will only happen once and is required to convert from `wem` to `wav`.
 
+## Searching
+The search for the lines now uses [Apache LuceneNET](https://lucenenet.apache.org/)! This means it now supports the [Lucene Query Parser Syntax](https://lucenenet.apache.org/docs/4.8.0-beta00017/api/queryparser/Lucene.Net.QueryParsers.Classic.html). Please check that linked documentation for tips on how to search better.
+
+One thing you may find useful out of the box is prefixing words with "+" to ensure its part of the search. For example searching "+gopher" will only return lines with the word "gopher" in them.
+
 ## Troubleshooting
 Always delete the cache at `%LOCALAPPDATA%\StarfieldVFRT\cache.json` when encountering issues. A lot of issues can arise from data being stale or incorrect in the cache. Future updates will have the ability to detect game version changes and automatically do this.
 
