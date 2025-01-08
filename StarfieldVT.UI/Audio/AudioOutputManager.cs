@@ -50,7 +50,17 @@ public class AudioOutputManager
             _outputDevice.Init(_soundBeingPlayed);
         }
 
+        _outputDevice.PlaybackStopped += OutputDeviceOnPlaybackStopped;
         _outputDevice.Play();
+    }
+
+    private void OutputDeviceOnPlaybackStopped(object? sender, StoppedEventArgs e)
+    {
+        _outputDevice?.Dispose();
+        _outputDevice = null;
+
+        _soundBeingPlayed?.Dispose();
+        _soundBeingPlayed = null;
     }
 
     public void StopSound()
@@ -60,11 +70,6 @@ public class AudioOutputManager
             && _outputDevice.PlaybackState != PlaybackState.Stopped)
         {
             _outputDevice.Stop();
-            _outputDevice.Dispose();
-            _outputDevice = null;
-
-            _soundBeingPlayed.Dispose();
-            _soundBeingPlayed = null;
         }
     }
 }

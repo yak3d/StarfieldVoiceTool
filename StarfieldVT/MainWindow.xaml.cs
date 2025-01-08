@@ -164,7 +164,9 @@ namespace StarfieldVT
 
         private void DeleteCache_Click(object sender, RoutedEventArgs e)
         {
+            LuceneManager.Instance().DeleteIndex();
             cacheManager.BustCache();
+            VoiceTypeTree.Reload();
         }
 
         private void StopButton_OnClick(object sender, RoutedEventArgs e)

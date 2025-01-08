@@ -27,7 +27,7 @@ public partial class VoiceTypeTree : UserControl
             Progress = progress;
         }
     }
-    public readonly VoiceTypeTreeViewModel VoiceTypeTreeViewModel;
+    public VoiceTypeTreeViewModel VoiceTypeTreeViewModel;
     public VoiceTypeTree()
     {
         InitializeComponent();
@@ -37,6 +37,12 @@ public partial class VoiceTypeTree : UserControl
         this.DataContext = VoiceTypeTreeViewModel;
     }
 
+    public void Reload()
+    {
+        VoiceTypeTreeViewModel = new VoiceTypeTreeViewModel();
+        VoiceTypeTreeViewModel.ProgressChanged += VoiceTypeTreeViewModelOnProgressChanged;
+        this.DataContext = VoiceTypeTreeViewModel;
+    }
     private void VoiceTypeTreeViewModelOnProgressChanged(object? sender, VoiceTypeTreeViewModel.VoiceTypeTreeViewModelProgressChangedEventHandler e)
     {
         if (ProgressChanged != null)

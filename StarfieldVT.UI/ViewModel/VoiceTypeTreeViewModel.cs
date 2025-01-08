@@ -59,16 +59,22 @@ public class VoiceTypeTreeViewModel
             try
             {
                 var dialogueTreeBuilder = new DialogueTreeBuilder();
-                var tree = treeCache ?? dialogueTreeBuilder.BuildTree(_progress).ToList();
-                _searchableMasters = tree;
-
-                ((IProgress<EsmLoadingProgress>)_progress).Report(new EsmLoadingProgress
+                if (treeCache is null)
                 {
-                    EsmName = "",
-                    Num = -1
-                });
+                    LuceneManager.Instance().DeleteIndex();
+                    var tree = dialogueTreeBuilder.BuildTree(_progress).ToList();
+                    _searchableMasters = tree;
 
-                return new ObservableCollection<Master>(tree);
+                    ((IProgress<EsmLoadingProgress>)_progress).Report(new EsmLoadingProgress
+                    {
+                        EsmName = "",
+                        Num = -1
+                    });
+
+                    return new ObservableCollection<Master>(tree);
+                }
+
+                return new ObservableCollection<Master>(treeCache);
             }
             catch (Exception e)
             {
