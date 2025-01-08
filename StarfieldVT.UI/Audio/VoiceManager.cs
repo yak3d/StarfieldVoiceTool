@@ -25,7 +25,8 @@ namespace StarfieldVT.UI.Audio
                 Log.Information($"Playing voice file {voiceFileOne.Path}");
 
                 var oggPath = AudioConverter.Wem2Ogg(voiceFileOne.GetBytes());
-                AudioOutputManager.Instance.PlaySound(Path.ChangeExtension(oggPath, ".ogg"));
+                AudioConverter.Ogg2Wav(oggPath, Path.ChangeExtension(oggPath, ".wav"));
+                AudioOutputManager.Instance.PlaySound(Path.ChangeExtension(oggPath, ".wav"));
             }
             catch (Exception ex)
             {

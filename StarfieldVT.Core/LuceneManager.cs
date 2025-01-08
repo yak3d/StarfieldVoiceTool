@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Lucene.Net.Analysis;
+﻿using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Core;
 using Lucene.Net.Analysis.Miscellaneous;
 using Lucene.Net.Analysis.Standard;
@@ -92,16 +91,21 @@ public class LuceneManager : IDisposable
 
         var parser = new QueryParser(AppLuceneVersion, "dialogue", _analyzer);
 
-        var queryStringBuilder = new StringBuilder(searchText);
-        queryStringBuilder.Append($" +master:{master}");
-        if (voiceType != null) queryStringBuilder.Append($" +voiceType:{voiceType}");
-        var fullSearchText = queryStringBuilder.ToString();
+        var query = parser.Parse(searchText);
+        var testQuery = new BooleanQuery()
+        {
+            { query, Occur.MUST },
+            { new TermQuery(new Term("master", master)), Occur.MUST }
+        };
 
-        var query = parser.Parse(fullSearchText);
+        if (voiceType != null)
+        {
+            testQuery.Add(new TermQuery(new Term("voiceType", voiceType)), Occur.MUST);
+        }
 
-        Log.Debug("Searching with query: {0}", fullSearchText);
+        Log.Debug("Searching with query: {0}", testQuery.ToString());
 
-        var docs = searcher.Search(query, int.MaxValue);
+        var docs = searcher.Search(testQuery, int.MaxValue);
         var fullDocs = docs.ScoreDocs.Select(doc =>
         {
             var fullDoc = searcher.Doc(doc.Doc);

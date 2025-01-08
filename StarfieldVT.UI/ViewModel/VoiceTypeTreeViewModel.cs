@@ -74,6 +74,7 @@ public class VoiceTypeTreeViewModel
                     return new ObservableCollection<Master>(tree);
                 }
 
+                _searchableMasters = treeCache;
                 return new ObservableCollection<Master>(treeCache);
             }
             catch (Exception e)
