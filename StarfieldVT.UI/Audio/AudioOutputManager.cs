@@ -1,12 +1,12 @@
-﻿using NAudio.Vorbis;
-using NAudio.Wave;
+﻿using NAudio.Wave;
+using Serilog;
 
 namespace StarfieldVT.UI.Audio;
 
 public class AudioOutputManager
 {
     private WaveOutEvent? _outputDevice;
-    private VorbisWaveReader? _soundBeingPlayed = null;
+    private WaveFileReader? _soundBeingPlayed = null;
 
     private AudioOutputManager()
     {
@@ -46,7 +46,7 @@ public class AudioOutputManager
 
         if (_soundBeingPlayed == null)
         {
-            _soundBeingPlayed = new VorbisWaveReader(soundPath);
+            _soundBeingPlayed = new WaveFileReader(soundPath);
             _outputDevice.Init(_soundBeingPlayed);
         }
 
@@ -56,6 +56,7 @@ public class AudioOutputManager
 
     private void OutputDeviceOnPlaybackStopped(object? sender, StoppedEventArgs e)
     {
+        Log.Debug("disposing audio device");
         _outputDevice?.Dispose();
         _outputDevice = null;
 
