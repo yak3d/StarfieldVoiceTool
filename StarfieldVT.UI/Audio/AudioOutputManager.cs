@@ -1,16 +1,18 @@
-﻿using NAudio.Wave;
+using LibVLCSharp.Shared;
+
 using Serilog;
 
 namespace StarfieldVT.UI.Audio;
 
 public class AudioOutputManager
 {
-    private WaveOutEvent? _outputDevice;
-    private WaveFileReader? _soundBeingPlayed = null;
+    private readonly LibVLC _libVlc;
+    private MediaPlayer? _mediaPlayer;
 
     private AudioOutputManager()
     {
-
+        LibVLCSharp.Shared.Core.Initialize();
+        _libVlc = new LibVLC("--no-video");
     }
 
     private static AudioOutputManager? _instance = null;
@@ -28,49 +30,35 @@ public class AudioOutputManager
 
     public void PlaySound(string soundPath)
     {
-
-        if (_outputDevice != null
-            && _soundBeingPlayed != null
-            && _outputDevice.PlaybackState != PlaybackState.Stopped)
+        if (_mediaPlayer != null)
         {
-            _outputDevice.Dispose();
-            _outputDevice = null;
-            _soundBeingPlayed.Dispose();
-            _soundBeingPlayed = null;
+            _mediaPlayer.Stop();
+            _mediaPlayer.Dispose();
+            _mediaPlayer = null;
         }
 
-        if (_outputDevice == null)
+        _mediaPlayer = new MediaPlayer(_libVlc);
+
+        using var media = new Media(_libVlc, soundPath, FromType.FromPath);
+        _mediaPlayer.EndReached += (_, _) =>
         {
-            _outputDevice = new WaveOutEvent();
-        }
+            Log.Debug("Playback ended, disposing media player");
+            // Must be dispatched - cannot dispose from event handler thread
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                _mediaPlayer?.Dispose();
+                _mediaPlayer = null;
+            });
+        };
 
-        if (_soundBeingPlayed == null)
-        {
-            _soundBeingPlayed = new WaveFileReader(soundPath);
-            _outputDevice.Init(_soundBeingPlayed);
-        }
-
-        _outputDevice.PlaybackStopped += OutputDeviceOnPlaybackStopped;
-        _outputDevice.Play();
-    }
-
-    private void OutputDeviceOnPlaybackStopped(object? sender, StoppedEventArgs e)
-    {
-        Log.Debug("disposing audio device");
-        _outputDevice?.Dispose();
-        _outputDevice = null;
-
-        _soundBeingPlayed?.Dispose();
-        _soundBeingPlayed = null;
+        _mediaPlayer.Play(media);
     }
 
     public void StopSound()
     {
-        if (_outputDevice != null
-            && _soundBeingPlayed != null
-            && _outputDevice.PlaybackState != PlaybackState.Stopped)
+        if (_mediaPlayer is { IsPlaying: true })
         {
-            _outputDevice.Stop();
+            _mediaPlayer.Stop();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -26,7 +27,14 @@ namespace StarfieldVT.Core
         public List<Models.Master> BuildTree(IProgress<EsmLoadingProgress> progress)
         {
             var startTime = DateTime.Now;
-            using var env = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
+            var dataFolderPath = StarfieldManager.GetGamePath();
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                EnsureLinuxPluginsFile(dataFolderPath);
+
+            using var env = GameEnvironment.Typical.Builder<IStarfieldMod, IStarfieldModGetter>(GameRelease.Starfield)
+                .WithTargetDataFolder(dataFolderPath)
+                .Build();
             var linkCache = env.LinkCache;
             var tree = env.LoadOrder.ListedOrder.Where(esm => esm is { Enabled: true, ExistsOnDisk: true }).Select(
                 esm =>
@@ -128,6 +136,25 @@ namespace StarfieldVT.Core
             // we'll replace the first two characters with 00
             var processedWemFile = "00" + wemFile.Substring(2);
             return $"sound/voice/{fileName}/{voiceType}/{processedWemFile}.wem";
+        }
+
+        private static void EnsureLinuxPluginsFile(string dataFolderPath)
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            Environment.SetEnvironmentVariable("LocalAppData", localAppData);
+
+            var pluginsDir = Path.Combine(localAppData, "Starfield");
+            Directory.CreateDirectory(pluginsDir);
+            var pluginsPath = Path.Combine(pluginsDir, "Plugins.txt");
+
+            if (!File.Exists(pluginsPath))
+            {
+                Log.Information("Creating Plugins.txt for Linux at {Path}", pluginsPath);
+                var plugins = new[] { "*.esm", "*.esp", "*.esl" }
+                    .SelectMany(p => Directory.EnumerateFiles(dataFolderPath, p))
+                    .Select(f => "*" + Path.GetFileName(f));
+                File.WriteAllLines(pluginsPath, plugins);
+            }
         }
 
         private void SaveCache(List<Models.Master> tree)

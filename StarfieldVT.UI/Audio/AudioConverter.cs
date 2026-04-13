@@ -34,7 +34,7 @@ public class AudioConverter
                 Log.Information($"Directory {directoryName} does not exist, creating it.");
                 Directory.CreateDirectory(directoryName);
             }
-            Log.Information($"Writing converted wem file to wav file at {wavPath.Replace("/", "\\")}");
+            Log.Information("Writing converted wem file to wav file at {WavPath}", wavPath);
             FFMpegArguments
                 .FromFileInput(oggPath)
                 .OutputToFile(wavPath)

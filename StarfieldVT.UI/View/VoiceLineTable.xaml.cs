@@ -1,10 +1,8 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Archives;
-using Mutagen.Bethesda.Installs;
 
 using Noggog;
 
@@ -27,66 +25,21 @@ public partial class VoiceLineTable : UserControl
     {
         InitializeComponent();
 
-        // DataContext = new VoiceLineTableViewModel();
         DataContextChanged += (sender, args) =>
         {
-            if (DataContext != null && DataContext is VoiceLineTableViewModel vm)
-            {
-                ViewModel.PropertyChanged += (sender, args) =>
-                {
-                    if (args.PropertyName == nameof(vm.VoiceLines))
-                    {
-
-                    }
-                };
-            }
         };
     }
 
-    public VoiceLineTableViewModel ViewModel => (VoiceLineTableViewModel)DataContext;
+    public VoiceLineTableViewModel ViewModel => (VoiceLineTableViewModel)DataContext!;
 
-    public DirectoryPath dataFolder = GameLocations.GetDataFolder(GameRelease.Starfield);
-    //
-    //
-    // public static readonly DependencyProperty SelectedVoiceLineProperty = DependencyProperty.Register(
-    //     nameof(SelectedVoiceLine),
-    //     typeof(VoiceLine),
-    //     typeof(UserControl),
-    //     new FrameworkPropertyMetadata(null));
-    //
-    // public List<VoiceLine> VoiceLines
-    // {
-    //     get => (List<VoiceLine>) GetValue(VoiceLinesProperty);
-    //     set
-    //     {
-    //         SetValue(VoiceLinesProperty, value);
-    //     }
-    // }
-    //
-    // public static readonly DependencyProperty VoiceLinesProperty = DependencyProperty.Register(
-    //     nameof(VoiceLines),
-    //     typeof(List<VoiceLine>),
-    //     typeof(VoiceLineTable),
-    //     new FrameworkPropertyMetadata(VoiceLinesChanged)
-    //     {
-    //         BindsTwoWayByDefault = true
-    //     }
-    // );
-    //
-    // private static void VoiceLinesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    // {
-    //         if (d is VoiceLineTable voiceLineTable)
-    //         {
-    //             voiceLineTable.VoiceLines = e.NewValue as List<VoiceLine> ?? new List<VoiceLine>();
-    //         }
-    // }
+    private DirectoryPath DataFolder => new DirectoryPath(StarfieldManager.GetGamePath());
 
     private IArchiveFile? getArchiveFileFromSelectedVoiceLine()
     {
         if (ViewModel.SelectedVoiceLine != null)
         {
             var archivePrefix = this.ViewModel.SelectedVoiceLine.ModName.Replace(".esm", "").Replace(".esp", "");
-            var applicableArchives = Archive.GetApplicableArchivePaths(GameRelease.Starfield, this.dataFolder).Where(archive =>
+            var applicableArchives = Archive.GetApplicableArchivePaths(GameRelease.Starfield, DataFolder).Where(archive =>
                 archive.NameWithoutExtension.StartsWith("Starfield - Voices")
                 || archive.NameWithoutExtension.Contains(archivePrefix)
                 && archive.NameWithoutExtension.ToLower().Contains("voices")
@@ -95,7 +48,9 @@ public partial class VoiceLineTable : UserControl
             foreach (var archive in applicableArchives)
             {
                 var archiveReader = Archive.CreateReader(GameRelease.Starfield, archive);
-                var voiceFile = archiveReader.Files.FirstOrDefault(file => file.Path.Equals(this.ViewModel.SelectedVoiceLine.Filename, StringComparison.InvariantCultureIgnoreCase));
+                var voiceFile = archiveReader.Files.FirstOrDefault(file =>
+                    file.Path.Equals(this.ViewModel.SelectedVoiceLine.Filename,
+                        StringComparison.InvariantCultureIgnoreCase));
 
                 if (voiceFile != null)
                 {
@@ -106,7 +61,7 @@ public partial class VoiceLineTable : UserControl
         return null;
     }
 
-    private void DialogueGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void DialogueGrid_OnDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (ViewModel.SelectedVoiceLine != null)
         {
@@ -117,7 +72,9 @@ public partial class VoiceLineTable : UserControl
             }
             else
             {
-                Log.Warning($"Attempted to play selected voice line {ViewModel.SelectedVoiceLine.Filename}, but unable to find the file in the archive for {ViewModel.SelectedVoiceLine.ModName}");
+                Log.Warning(
+                    "Attempted to play selected voice line {Filename}, but unable to find the file in the archive for {ModName}",
+                    ViewModel.SelectedVoiceLine.Filename, ViewModel.SelectedVoiceLine.ModName);
             }
         }
     }
@@ -128,7 +85,8 @@ public partial class VoiceLineTable : UserControl
         if (voiceFile != null)
         {
             var wemPath = AudioConverter.Wem2Ogg(voiceFile.GetBytes());
-            AudioConverter.Ogg2Wav(wemPath, Path.Join(StarfieldManager.GetGamePath(), Path.ChangeExtension(voiceFile.Path, "wav")));
+            AudioConverter.Ogg2Wav(wemPath,
+                Path.Join(StarfieldManager.GetGamePath(), Path.ChangeExtension(voiceFile.Path, "wav")));
         }
     }
 }

@@ -1,10 +1,8 @@
-﻿using System.IO;
+using System.Diagnostics;
+using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Text;
-
-using Noggog;
 
 using Serilog;
 
@@ -12,52 +10,68 @@ namespace StarfieldVT.Core.Dependencies;
 
 public class FfmpegDependencyManager
 {
-    private readonly string ffmpegDownloadUrl =
-        "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v5.1/ffmpeg-5.1-win-64.zip";
+    private static string FfmpegBinaryName =>
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg";
 
-    [DllImport("shlwapi.dll", CharSet = CharSet.Auto, SetLastError = false)]
-    static extern bool PathFindOnPath([In, Out] StringBuilder pszFile, [In] string[] ppszOtherDirs);
+    private static string FfmpegDownloadUrl =>
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v5.1/ffmpeg-5.1-win-64.zip"
+            : "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v5.1/ffmpeg-5.1-linux-64.zip";
 
     public bool FfmpegOnPath()
     {
-        var sb = new StringBuilder("ffmpeg.exe", 260);
-        if (PathFindOnPath(sb, null!))
+        var pathEnv = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(pathEnv))
+            return false;
+
+        var paths = pathEnv.Split(Path.PathSeparator);
+        foreach (var dir in paths)
         {
-            var pathToFfmpeg = sb.ToString();
-
-            Log.Information($"Path to ffmpeg found at {pathToFfmpeg}");
-
-            return !pathToFfmpeg.IsNullOrEmpty();
+            var fullPath = Path.Combine(dir, FfmpegBinaryName);
+            if (File.Exists(fullPath))
+            {
+                Log.Information("Path to ffmpeg found at {Path}", fullPath);
+                return true;
+            }
         }
 
         return false;
     }
 
-    public bool FfmpegInBaseDirectory() => File.Exists(Path.Join(AppContext.BaseDirectory, "ffmpeg.exe"));
+    public bool FfmpegInBaseDirectory() => File.Exists(Path.Join(AppContext.BaseDirectory, FfmpegBinaryName));
 
     public async Task DownloadFfmpegIfNotExists()
     {
-        Log.Information("Checking for ffmpeg.exe in PATH");
+        Log.Information("Checking for {FfmpegBinary} in PATH", FfmpegBinaryName);
         if (!FfmpegOnPath() && !FfmpegInBaseDirectory())
         {
-            Log.Information($"ffmpeg.exe not found in PATH or base directory, downloading from {ffmpegDownloadUrl}");
+            Log.Information("{FfmpegBinary} not found in PATH or base directory, downloading from {Url}",
+                FfmpegBinaryName, FfmpegDownloadUrl);
+
             using var httpClient = new HttpClient();
             var dlPath = AppContext.BaseDirectory;
-            await using var stream = await httpClient.GetStreamAsync(ffmpegDownloadUrl);
+            await using var stream = await httpClient.GetStreamAsync(FfmpegDownloadUrl);
             var ffmpegZipPath = Path.Combine(dlPath, "ffmpeg.zip");
             await using var fileWriter = File.OpenWrite(ffmpegZipPath);
             await stream.CopyToAsync(fileWriter);
             fileWriter.Close();
-            Log.Information($"ffmpeg completed download, at path {ffmpegZipPath}");
+            Log.Information("ffmpeg completed download, at path {ZipPath}", ffmpegZipPath);
 
-            var ffmpegExePath = Path.Combine(dlPath, "ffmpeg.exe");
-            Log.Information($"Unzipping ffmpeg.exe to {ffmpegExePath}");
+            var ffmpegPath = Path.Combine(dlPath, FfmpegBinaryName);
+            Log.Information("Unzipping ffmpeg to {Path}", ffmpegPath);
             ZipFile.ExtractToDirectory(ffmpegZipPath, dlPath, true);
-            Log.Information($"ffmpeg.exe should be found at {ffmpegExePath}");
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Log.Information("Setting executable permission on {Path}", ffmpegPath);
+                Process.Start("chmod", $"+x \"{ffmpegPath}\"")?.WaitForExit();
+            }
+
+            Log.Information("ffmpeg should be found at {Path}", ffmpegPath);
         }
         else
         {
-            Log.Information($"ffmpeg.exe already exists, skipping download");
+            Log.Information("ffmpeg already exists, skipping download");
         }
     }
 }

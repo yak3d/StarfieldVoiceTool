@@ -1,6 +1,5 @@
-﻿using System.ComponentModel;
-using System.Windows;
-using System.Windows.Controls;
+using Avalonia;
+using Avalonia.Controls;
 
 using Serilog;
 
@@ -16,18 +15,16 @@ public partial class VoiceTypeTree : UserControl
 {
     public class VoiceTypeTreeProgressChangedEventHandler : EventArgs
     {
-        public EsmLoadingProgress Progress
-        {
-            get;
-            private set;
-        }
+        public EsmLoadingProgress Progress { get; private set; }
 
         public VoiceTypeTreeProgressChangedEventHandler(EsmLoadingProgress progress)
         {
             Progress = progress;
         }
     }
+
     public VoiceTypeTreeViewModel VoiceTypeTreeViewModel;
+
     public VoiceTypeTree()
     {
         InitializeComponent();
@@ -43,63 +40,60 @@ public partial class VoiceTypeTree : UserControl
         VoiceTypeTreeViewModel.ProgressChanged += VoiceTypeTreeViewModelOnProgressChanged;
         this.DataContext = VoiceTypeTreeViewModel;
     }
-    private void VoiceTypeTreeViewModelOnProgressChanged(object? sender, VoiceTypeTreeViewModel.VoiceTypeTreeViewModelProgressChangedEventHandler e)
+
+    private void VoiceTypeTreeViewModelOnProgressChanged(object? sender,
+        VoiceTypeTreeViewModel.VoiceTypeTreeViewModelProgressChangedEventHandler e)
     {
-        if (ProgressChanged != null)
-        {
-            ProgressChanged(this, new VoiceTypeTreeProgressChangedEventHandler(e.Progress));
-        }
+        ProgressChanged?.Invoke(this, new VoiceTypeTreeProgressChangedEventHandler(e.Progress));
     }
 
-    public static readonly DependencyProperty SearchTextProperty =
-        DependencyProperty.Register(nameof(SearchText), typeof(string), typeof(VoiceTypeTree), new FrameworkPropertyMetadata("test4321", new PropertyChangedCallback(OnSearchTextChanged)));
+    public static readonly StyledProperty<string> SearchTextProperty =
+        AvaloniaProperty.Register<VoiceTypeTree, string>(nameof(SearchText), defaultValue: "");
 
     public string SearchText
     {
-        get => (string)GetValue(SearchTextProperty);
+        get => GetValue(SearchTextProperty);
         set => SetValue(SearchTextProperty, value);
     }
 
-    [Browsable(true)]
-    [Category("Action")]
-    [Description("Invoked when the user selects a voice time")]
+    static VoiceTypeTree()
+    {
+        SearchTextProperty.Changed.AddClassHandler<VoiceTypeTree>(OnSearchTextChanged);
+    }
+
     public event VoiceTypeSelectedHandler? VoiceTypeSelected;
-
-    [Browsable(true)]
-    [Category("Action")]
-    [Description("Invoked when the user selects a voice time")]
     public event MasterSelectedHandler? MasterSelected;
-
-    [Browsable(true)]
-    [Category("Action")]
-    [Description("Invoked when the progress of loading the data changes")]
     public event EventHandler<VoiceTypeTreeProgressChangedEventHandler>? ProgressChanged;
 
     public delegate void VoiceTypeSelectedHandler(object sender, VoiceTypeSelectedArgs<IVoiceTypeTreeItem> e);
     public delegate void MasterSelectedHandler(object sender, MasterSelectedArgs<IVoiceTypeTreeItem> e);
 
-    private void EsmTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    private void EsmTreeView_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        switch (e.NewValue)
+        if (e.AddedItems.Count == 0) return;
+
+        var selectedItem = e.AddedItems[0];
+        var oldItem = e.RemovedItems.Count > 0 ? e.RemovedItems[0] : null;
+
+        switch (selectedItem)
         {
             case VoiceType selectedVoiceType:
-                Log.Debug("Chose voice type: {voiceType}", selectedVoiceType.EditorId);
-
-                VoiceTypeSelected?.Invoke(this, new VoiceTypeSelectedArgs<IVoiceTypeTreeItem>((IVoiceTypeTreeItem)e.OldValue, selectedVoiceType));
-
+                VoiceTypeSelected?.Invoke(this,
+                    new VoiceTypeSelectedArgs<IVoiceTypeTreeItem>(
+                        oldItem as IVoiceTypeTreeItem ?? selectedVoiceType,
+                        selectedVoiceType));
                 break;
             case Master master:
-                Log.Debug("Picked master with filename: {masterFileName}", master.Filename);
-
-                MasterSelected?.Invoke(this, new MasterSelectedArgs<IVoiceTypeTreeItem>((IVoiceTypeTreeItem)e.OldValue, master));
+                MasterSelected?.Invoke(this,
+                    new MasterSelectedArgs<IVoiceTypeTreeItem>(
+                        oldItem as IVoiceTypeTreeItem ?? master,
+                        master));
                 break;
         }
     }
 
-    private static void OnSearchTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private static void OnSearchTextChanged(VoiceTypeTree voiceTypeTree, AvaloniaPropertyChangedEventArgs e)
     {
-        if (d is not VoiceTypeTree voiceTypeTree) return;
-
         if (e.NewValue is not string newSearchQuery)
         {
             Log.Error("The search query for the Voice Type Tree View was null");
