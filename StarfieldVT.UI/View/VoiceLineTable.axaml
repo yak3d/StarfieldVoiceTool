@@ -16,11 +16,12 @@
                   Name="DialogueGrid" ItemsSource="{Binding VoiceLines}"
                   SelectedItem="{Binding SelectedVoiceLine}"
                   DoubleTapped="DialogueGrid_OnDoubleTapped"
-                  SelectionMode="Single">
+                  SelectionMode="Single"
+                  CanUserResizeColumns="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Voice Type" Binding="{Binding VoiceType}" />
-                <DataGridTextColumn Header="Filename" Binding="{Binding Filename}" />
-                <DataGridTextColumn Header="Dialogue" Binding="{Binding Dialogue}" />
+                <DataGridTextColumn Header="Voice Type" Binding="{Binding VoiceType}" Width="120" />
+                <DataGridTextColumn Header="Filename" Binding="{Binding Filename}" Width="200" />
+                <DataGridTextColumn Header="Dialogue" Binding="{Binding Dialogue}" Width="*" />
             </DataGrid.Columns>
         </DataGrid>
         <Grid Grid.Row="1">
