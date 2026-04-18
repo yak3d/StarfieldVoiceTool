@@ -24,6 +24,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.2.7" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.7" />
     <PackageReference Include="Projektanker.Icons.Avalonia.FontAwesome" Version="9.4.0" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0" />
   </ItemGroup>
 
   <ItemGroup>
