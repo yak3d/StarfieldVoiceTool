@@ -1,14 +1,10 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using DynamicData;
 
-using Mutagen.Bethesda;
-using Mutagen.Bethesda.Environments;
-using Mutagen.Bethesda.Starfield;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 using StarfieldVT.Core;
 using StarfieldVT.Core.Dependencies;
@@ -54,21 +50,11 @@ namespace StarfieldVT
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-        private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
     }
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
+
     public partial class MainWindow : Window
     {
-        public required ObservableCollection<Master> Masters { get; set; }
+        public ObservableCollection<Master> Masters { get; set; } = [];
 
         readonly List<Master> _tree = [];
 
@@ -79,59 +65,71 @@ namespace StarfieldVT
         public MainWindow()
         {
             InitializeComponent();
-            SetLoadingState();
             DataContext = _mainWindowModel;
         }
 
-        protected override void OnContentRendered(EventArgs e)
+        protected override async void OnOpened(EventArgs e)
         {
-            CheckAndInstallFfmpeg();
-            base.OnContentRendered(e);
+            base.OnOpened(e);
+            await EnsureGamePathConfigured();
+            await CheckAndInstallFfmpeg();
+            SetLoadingState();
         }
 
         private void SetLoadingState()
         {
-            var test = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).LoadOrder.PriorityOrder.ToList();
-
             TreeBuilderProgressBar.IsEnabled = true;
-            TreeBuilderProgressBar.Visibility = Visibility.Visible;
-            TreeBuilderProgressBar.Maximum = test.Where(esm => esm.Enabled && esm.ExistsOnDisk).Quest().WinningOverrides().Count();
+            TreeBuilderProgressBar.IsVisible = true;
         }
 
-        private async void CheckAndInstallFfmpeg()
+        private async Task CheckAndInstallFfmpeg()
         {
             var ffmpegInterstitial = new FfmpegInterstitial();
             var ffmpegDepMgr = new FfmpegDependencyManager();
 
-            ffmpegInterstitial.Owner = this;
-            this.IsEnabled = false;
             ffmpegInterstitial.Show();
-            ffmpegInterstitial.Focus();
+            this.IsEnabled = false;
             await ffmpegDepMgr.DownloadFfmpegIfNotExists();
             ffmpegInterstitial.Close();
             this.IsEnabled = true;
         }
 
-        private void dialogueGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async Task EnsureGamePathConfigured()
         {
+            var settings = SettingsManager.Instance;
+
+            if (settings.HasValidGamePath())
+                return;
+
+            var autoPath = settings.TryAutoDetectGamePath();
+            if (autoPath != null)
+            {
+                settings.StarfieldDataPath = autoPath;
+                return;
+            }
+
+            await PromptForGamePath();
         }
 
-        private void searchTreeView_TextChanged(object sender, TextChangedEventArgs e)
+        private async Task PromptForGamePath()
         {
-            var newSearchQuery = ((TextBox)sender).Text;
-            _mainWindowModel.SearchBarText = newSearchQuery;
-            var filteredVoiceTypes = _tree.Where(master => master.VoiceTypes.Any(vt => vt.EditorId.StartsWith(newSearchQuery))).Select(master => new Master(master.Filename, master.VoiceTypes.Where(vt => vt.EditorId.StartsWith(newSearchQuery)).ToList()));
-            this.Masters.Clear();
-            this.Masters.Add(filteredVoiceTypes);
+            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "Select Starfield Data Folder",
+                AllowMultiple = false
+            });
 
-            e.Handled = true;
+            if (folders.Count > 0)
+            {
+                var path = folders[0].Path.LocalPath;
+                SettingsManager.Instance.StarfieldDataPath = path;
+            }
         }
 
         private void VoiceTypeTree_OnVoiceTypeSelected(object sender, VoiceTypeSelectedArgs<IVoiceTypeTreeItem> e)
         {
-            if (e.NewValue is VoiceType)
+            if (e.NewValue is VoiceType selectedVoiceType)
             {
-                var selectedVoiceType = (VoiceType)e.NewValue;
                 if (_mainWindowModel.VoiceLineTableViewModel == null) return;
                 _mainWindowModel.VoiceLineTableViewModel.VoiceLines = null;
                 _mainWindowModel.VoiceLineTableViewModel.VoiceLines =
@@ -145,21 +143,16 @@ namespace StarfieldVT
         {
             if (e.Progress.Num < 0)
             {
-                TreeBuilderProgressBar.Visibility = Visibility.Collapsed;
-                ProgressText.Content = "Loaded";
+                TreeBuilderProgressBar.IsVisible = false;
+                ProgressText.Text = "Loaded";
                 return;
             }
             TreeBuilderProgressBar.Value = e.Progress.Num;
-            ProgressText.Content = $"Parsing quest {e.Progress.EsmName}";
+            ProgressText.Text = $"Parsing quest {e.Progress.EsmName}";
 
             if (!(TreeBuilderProgressBar.Value >= TreeBuilderProgressBar.Maximum)) return;
-            TreeBuilderProgressBar.Visibility = Visibility.Collapsed;
-            ProgressText.Content = "Loaded";
-        }
-
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
-        {
-
+            TreeBuilderProgressBar.IsVisible = false;
+            ProgressText.Text = "Loaded";
         }
 
         private void DeleteCache_Click(object sender, RoutedEventArgs e)
@@ -191,7 +184,16 @@ namespace StarfieldVT
 
         private void MenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            System.Windows.Application.Current.Shutdown();
+            if (Avalonia.Application.Current?.ApplicationLifetime is
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                desktop.Shutdown();
+            }
+        }
+
+        private async void SetGamePath_Click(object sender, RoutedEventArgs e)
+        {
+            await PromptForGamePath();
         }
     }
 }

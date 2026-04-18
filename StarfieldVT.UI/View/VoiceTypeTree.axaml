@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:StarfieldVT.UI.ViewModel"
+             xmlns:models="using:StarfieldVT.Core.Models"
+             x:Class="StarfieldVT.UI.View.VoiceTypeTree"
+             x:DataType="local:VoiceTypeTreeViewModel">
+    <Grid>
+        <TreeView Name="EsmTreeView" ItemsSource="{Binding Masters.Result}"
+                  SelectionChanged="EsmTreeView_OnSelectionChanged">
+            <TreeView.DataTemplates>
+                <TreeDataTemplate DataType="models:Master" ItemsSource="{Binding VoiceTypes}">
+                    <TextBlock Text="{Binding Filename}" />
+                </TreeDataTemplate>
+                <DataTemplate DataType="models:VoiceType">
+                    <TextBlock Text="{Binding EditorId}" />
+                </DataTemplate>
+            </TreeView.DataTemplates>
+        </TreeView>
+    </Grid>
+</UserControl>

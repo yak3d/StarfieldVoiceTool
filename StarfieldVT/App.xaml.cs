@@ -1,5 +1,8 @@
-﻿using System.IO;
-using System.Windows;
+using System.IO;
+
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
 
 using Serilog;
 
@@ -7,12 +10,14 @@ using StarfieldVT.Core.Filesystem;
 
 namespace StarfieldVT
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
-        protected override void OnStartup(StartupEventArgs e)
+        public override void Initialize()
+        {
+            AvaloniaXamlLoader.Load(this);
+        }
+
+        public override void OnFrameworkInitializationCompleted()
         {
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
@@ -20,7 +25,7 @@ namespace StarfieldVT
                 .WriteTo.Console()
                 .WriteTo.File(
                     Path.Combine(AppDataFolder.GetLogDir(),
-                        $"starfieldvt.log"
+                        "starfieldvt.log"
                         ),
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 5,
@@ -29,8 +34,12 @@ namespace StarfieldVT
                     )
                 .CreateLogger();
 
-            base.OnStartup(e);
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                desktop.MainWindow = new MainWindow();
+            }
+
+            base.OnFrameworkInitializationCompleted();
         }
     }
-
 }

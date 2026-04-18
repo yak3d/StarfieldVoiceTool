@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Archives;
-using Mutagen.Bethesda.Installs;
 using Noggog;
 using Serilog;
 
@@ -30,7 +29,7 @@ public class WemKey(string masterName, string wemName)
 
 public class VoiceArchiveManager
 {
-    private DirectoryPath _dataFolder = GameLocations.GetDataFolder(GameRelease.Starfield);
+    private DirectoryPath _dataFolder = new DirectoryPath(StarfieldManager.GetGamePath());
     public IEnumerable<FilePath> GetApplicableVoiceArchives(string modFileName)
     {
         var archivePrefix = modFileName.Replace(".esm", "").Replace(".esp", "");

@@ -1,18 +1,15 @@
-﻿using System.Windows;
-
 using StarfieldVT.Core.Models;
 
 namespace StarfieldVT.UI.Events;
 
-public class MasterSelectedArgs<T> : RoutedPropertyChangedEventArgs<T> where T : IVoiceTypeTreeItem
+public class MasterSelectedArgs<T> : EventArgs where T : IVoiceTypeTreeItem
 {
+    public T? OldValue { get; }
+    public T NewValue { get; }
 
-    public MasterSelectedArgs(T oldValue, T newValue) : base(oldValue, newValue)
+    public MasterSelectedArgs(T oldValue, T newValue)
     {
-
-    }
-
-    public MasterSelectedArgs(T oldValue, T newValue, RoutedEvent routedEvent) : base(oldValue, newValue, routedEvent)
-    {
+        OldValue = oldValue;
+        NewValue = newValue;
     }
 }

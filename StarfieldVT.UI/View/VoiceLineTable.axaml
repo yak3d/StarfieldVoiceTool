@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:StarfieldVT.UI.View"
+             xmlns:viewModel="using:StarfieldVT.UI.ViewModel"
+             x:Class="StarfieldVT.UI.View.VoiceLineTable"
+             x:Name="parent">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <DataGrid Grid.Row="0" Grid.Column="0" IsReadOnly="True" AutoGenerateColumns="False"
+                  Name="DialogueGrid" ItemsSource="{Binding VoiceLines}"
+                  SelectedItem="{Binding SelectedVoiceLine}"
+                  DoubleTapped="DialogueGrid_OnDoubleTapped"
+                  SelectionMode="Single"
+                  CanUserResizeColumns="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Voice Type" Binding="{Binding VoiceType}" Width="120" />
+                <DataGridTextColumn Header="Filename" Binding="{Binding Filename}" Width="200" />
+                <DataGridTextColumn Header="Dialogue" Binding="{Binding Dialogue}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Margin="5" Text="Filter" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Margin="0, 5" VerticalContentAlignment="Center"
+                     Text="{Binding VoiceLineFilterText}" />
+            <Button Grid.Column="2" Name="ExportBtn" Margin="10, 5" Content="Export"
+                    Click="ExportBtn_OnClick" />
+        </Grid>
+    </Grid>
+</UserControl>

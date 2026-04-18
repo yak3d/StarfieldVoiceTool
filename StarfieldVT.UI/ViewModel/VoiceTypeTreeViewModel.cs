@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Windows;
+using System.Collections.ObjectModel;
 using DynamicData;
 
 using Serilog;
@@ -19,10 +18,6 @@ public class VoiceTypeTreeViewModel
         set;
     }
 
-    /// <summary>
-    /// Holds a list of all masters to be searched. This way if we search the <code>Masters</code> collection and remove
-    /// the ones that don't match our search, we still have this list to search against.
-    /// </summary>
     private List<Master> _searchableMasters = new();
 
     private readonly VoiceLineTreeCacheManager _cacheManager;
@@ -86,15 +81,7 @@ public class VoiceTypeTreeViewModel
         {
             var e = faultedTask.Exception;
             if (e == null) return faultedTask.Result;
-            Log.Error(e, e.Message);
-
-            // notify user an error has occured with a message box
-            MessageBox.Show(
-                $"Failed to load voice types, see logs for error at {AppDataFolder.GetLogDir()}",
-                "Loading Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error
-                );
+            Log.Error(e, "Failed to load voice types, see logs for error at {LogDir}", AppDataFolder.GetLogDir());
             throw e;
         });
     }
